@@ -138,7 +138,7 @@ Describe what you want implemented naturally. The assistant handles different sc
 2. **DUAL TRACKING is mandatory**: Update BOTH implementation plan AND GitHub issue
 3. **GitHub issue tracking is NOT optional** - it's required for project management
 4. **Check issue checkboxes**: `- [ ] TASK-...` → `- [x] TASK-...`
-5. **Add progress comments**: Use `add_issue_comment` to document what was completed
+5. **Add progress comments**: Document what was completed in the GitHub issue
 6. **Verify completion**: Use the Success Verification Checklist to ensure nothing is missed
 
 **Common failure modes to avoid:**
