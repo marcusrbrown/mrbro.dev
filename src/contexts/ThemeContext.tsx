@@ -1,6 +1,6 @@
 import type {Theme, ThemeContextValue, ThemeMode} from '../types'
 import {createContext, useContext, useEffect, useState, type ReactNode} from 'react'
-import {loadCustomTheme, loadThemeMode, saveCustomTheme, saveThemeMode} from '../utils/theme-storage'
+import {loadCustomTheme, loadThemeMode, removeCustomTheme, saveCustomTheme, saveThemeMode} from '../utils/theme-storage'
 
 const defaultLightTheme: Theme = {
   id: 'default-light',
@@ -77,6 +77,8 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
     setCustomThemeState(theme)
     if (theme) {
       saveCustomTheme(theme)
+    } else {
+      removeCustomTheme()
     }
   }
 
