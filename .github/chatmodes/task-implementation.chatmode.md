@@ -88,7 +88,7 @@ Describe what you want implemented naturally. The assistant handles different sc
 
 **Commit and review process:**
 - Stage and commit changes: `git add .` and `git commit -m "descriptive message"`
-- Create pull request with detailed description
+- Use the `create_pull_request` tool to create a pull request with a detailed description
 - Include summary of changes, testing performed, and any considerations
 - Request Copilot review for code quality and best practices
 
