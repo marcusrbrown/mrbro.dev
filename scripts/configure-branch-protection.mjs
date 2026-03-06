@@ -16,7 +16,7 @@ const BRANCH_PROTECTION_CONFIG = {
 
   // Repository information
   owner: 'marcusrbrown',
-  repo: 'marcusrbrown.github.io',
+  repo: 'mrbro.dev',
 
   // Required status checks (choose one approach)
   statusChecks: {
