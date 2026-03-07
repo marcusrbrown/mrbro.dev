@@ -1,3 +1,4 @@
+import type {ChildProcess} from 'node:child_process'
 import {spawn} from 'node:child_process'
 import process from 'node:process'
 
@@ -7,6 +8,19 @@ const checks = [
   {label: 'build', args: ['run', 'build']},
 ]
 
+const activeChildren = new Set<ChildProcess>()
+
+function forwardSignal(signal: NodeJS.Signals) {
+  for (const child of activeChildren) {
+    child.kill(signal)
+  }
+
+  process.exit(1)
+}
+
+process.on('SIGINT', () => forwardSignal('SIGINT'))
+process.on('SIGTERM', () => forwardSignal('SIGTERM'))
+
 function runCheck(label: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn('pnpm', [...args], {
@@ -14,11 +28,16 @@ function runCheck(label: string, args: string[]) {
       shell: process.platform === 'win32',
     })
 
+    activeChildren.add(child)
+
     child.on('error', error => {
+      activeChildren.delete(child)
       reject(new Error(`${label} failed to start: ${error.message}`))
     })
 
     child.on('close', code => {
+      activeChildren.delete(child)
+
       if (code === 0) {
         resolve()
         return
@@ -45,4 +64,5 @@ if (failedChecks.length > 0) {
   process.exit(1)
 }
 
-console.warn('\n[pre-push] all checks passed')
+// eslint-disable-next-line no-console
+console.log('\n[pre-push] all checks passed')

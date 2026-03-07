@@ -18,16 +18,17 @@ function parseInput(raw: string): Record<string, unknown> {
 }
 
 function hasForbiddenPattern(commandText: string): string | undefined {
-  const denyPatterns = [
-    'git push --force',
-    'git push -f',
-    'git reset --hard',
-    'rm -rf /',
-    'curl http://',
-    'wget http://',
+  const denyPatterns: {pattern: RegExp; label: string}[] = [
+    {pattern: /git\s+push\b[^|;]*--force(?:-with-lease)?\b/, label: 'git push --force'},
+    {pattern: /git\s+push\b[^|;]*\s-f\b/, label: 'git push -f'},
+    {pattern: /git\s+reset\s+--hard\b/, label: 'git reset --hard'},
+    {pattern: /\brm\s+-[rf]+\s+\//, label: 'rm -rf /'},
+    {pattern: /\bcurl\s+https?:\/\//, label: 'curl http(s)'},
+    {pattern: /\bwget\s+https?:\/\//, label: 'wget http(s)'},
   ]
 
-  return denyPatterns.find(pattern => commandText.includes(pattern))
+  const match = denyPatterns.find(entry => entry.pattern.test(commandText))
+  return match?.label
 }
 
 interface CommandInput {
@@ -46,14 +47,10 @@ function resolveCommandText(payload: CommandInput): string {
     }
 
     if (Array.isArray(value)) {
-      for (const item of value) {
-        const extracted = extractFromValue(item)
-        if (extracted.trim().length > 0) {
-          return extracted
-        }
-      }
-
-      return ''
+      return value
+        .map(item => extractFromValue(item))
+        .filter(s => s.trim().length > 0)
+        .join(' ')
     }
 
     if (typeof value !== 'object' || value == null) {
@@ -93,7 +90,7 @@ function resolveCommandText(payload: CommandInput): string {
   return ''
 }
 
-const chunks = []
+const chunks: string[] = []
 
 for await (const chunk of process.stdin) {
   chunks.push(typeof chunk === 'string' ? chunk : chunk.toString('utf8'))
