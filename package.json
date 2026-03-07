@@ -57,6 +57,7 @@
     "dashboard": "node scripts/test-dashboard.mjs",
     "dashboard:update": "npm run test:all && npm run dashboard",
     "configure:branch-protection": "node scripts/configure-branch-protection.mjs",
+    "configure:repo-settings": "tsx scripts/apply-repo-settings.ts",
     "artifacts": "node scripts/artifact-management.mjs",
     "artifacts:cleanup": "node scripts/artifact-management.mjs cleanup",
     "artifacts:optimize": "node scripts/artifact-management.mjs optimize",
