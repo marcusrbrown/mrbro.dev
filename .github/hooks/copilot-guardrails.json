@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node .github/hooks/pre-tool-use.ts",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

@@ -63,7 +63,8 @@
     "artifacts:full": "node scripts/artifact-management.mjs full"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm exec lint-staged"
+    "pre-commit": "pnpm exec lint-staged",
+    "pre-push": "node .github/git-hooks/pre-push.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,md,yaml}": [
