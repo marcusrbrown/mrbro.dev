@@ -32,9 +32,64 @@ Runs on:
 
 Deploys to GitHub Pages at `mrbro.dev`.
 
+### 🧪 E2E Tests Workflow (`.github/workflows/e2e-tests.yaml`)
+
+Runs on:
+
+- Pull requests to `main`
+- Manual workflow dispatch (with selectable browser and test-type)
+
+**Jobs:**
+
+- **Setup**: Installs Playwright browsers and caches them via the composite action
+- **Build for Tests**: Builds the site for serving during E2E test runs
+- **E2E Tests**: Runs Playwright functional tests (matrix: chromium)
+- **Visual Regression**: Runs screenshot-based visual comparison tests
+- **Accessibility Tests**: Runs axe-core WCAG 2.1 AA audits across all pages
+- **Test Summary**: Aggregates results and generates badge data
+- **Notification**: Posts/updates a PR comment with pass/fail status for all suites
+
+> **Note:** The E2E workflow uses `playwright.config.ts` which sets `retries: 2` on CI, absorbing transient network flakiness automatically.
+
 ### 🔄 Renovate Workflow (`.github/workflows/renovate.yaml`)
 
 Automated dependency updates using Renovate bot.
+
+## Agent Skills (`.agents/skills/`)
+
+Agent skills empower Copilot and Fro Bot to interact with the site programmatically. Skills follow the [Agent Skills specification](https://agentskills.io/specification) and live in `.agents/skills/`.
+
+### 🌐 agent-browser (`.agents/skills/agent-browser/SKILL.md`)
+
+CLI-based browser automation via `npx agent-browser`. Use for:
+
+- Navigating pages and capturing screenshots
+- Checking for JavaScript errors and broken assets
+- Verifying theme switching behavior
+- Comparing deployed vs local preview builds
+- Spot-checking WCAG compliance visually
+
+### 🎭 playwright-mcp (`.agents/skills/playwright-mcp/SKILL.md`)
+
+Accessibility-tree-based browser automation via the Playwright MCP server. Use for:
+
+- Full WCAG 2.1 AA audits (navigate → snapshot → assert landmark structure)
+- Verifying navigation flows work end-to-end
+- Checking responsive behavior at specific viewports
+- Smoke-testing the deployed site after each deploy
+
+**MCP Configuration:**
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}
+```
 
 ## Reusable Actions
 
