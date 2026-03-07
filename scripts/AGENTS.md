@@ -33,11 +33,11 @@
 
 ### Artifact Management
 
-| Script                            | Role                                                                     |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `artifact-management.mjs`         | Automated cleanup — coverage/results 30 days, visual baselines permanent |
-| `visual-artifact-manager.mjs`     | Handles diff/failure snapshots for visual regression                     |
-| `configure-branch-protection.mjs` | Automates GitHub repository branch protection rulesets                   |
+| Script                           | Role                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| `artifact-management.mjs`        | Automated cleanup — coverage/results 30 days, visual baselines permanent |
+| `visual-artifact-manager.mjs`    | Handles diff/failure snapshots for visual regression                     |
+| `configure-branch-protection.ts` | Automates GitHub repository branch protection rulesets                   |
 
 ## CI Integration
 
