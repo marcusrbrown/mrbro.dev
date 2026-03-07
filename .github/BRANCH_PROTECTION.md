@@ -8,13 +8,27 @@ The project uses multiple test suites that should be enforced as required status
 
 ## Required Status Checks
 
-### Primary Status Checks
+### Required Status Checks (Current PR #6 Set)
 
-These are the main status checks that should be **required** for merge:
+These status checks are currently expected as required for merge:
 
-1. **`Quality Gate`** - Consolidated CI gate from `CI` workflow
-2. **`Test Summary & Badge Generation`** - Consolidated E2E gate from `E2E Tests` workflow
-3. **`Performance Summary`** - Consolidated performance gate from `Performance Testing` workflow
+1. `Test Notifications`
+2. `Test Summary & Badge Generation`
+3. `Performance Summary`
+4. `Quality Gate`
+5. `E2E Tests (chromium)`
+6. `Build for Testing`
+7. `Build Project`
+8. `Validate Dependencies`
+9. `Lint Code`
+10. `Test`
+11. `Type Check`
+12. `Performance Audit (mobile)`
+13. `Performance Audit (desktop)`
+14. `Fro Bot`
+15. `Setup and Cache`
+16. `Setup E2E Environment`
+17. `Renovate / Renovate`
 
 ### Individual Test Suite Checks (Alternative)
 
@@ -23,7 +37,6 @@ If you prefer granular control, you can require individual workflow jobs:
 #### CI Workflow (`CI`)
 
 - **`Quality Gate`** - Consolidates unit tests, linting, build, type checking, validation
-- **`Matrix Test`** - Cross-platform compatibility testing
 
 #### E2E Tests Workflow (`E2E Tests`)
 
@@ -57,9 +70,23 @@ If you prefer granular control, you can require individual workflow jobs:
    **Required checks to add:**
 
    ```text
-   Quality Gate
+   Test Notifications
    Test Summary & Badge Generation
    Performance Summary
+   Quality Gate
+   E2E Tests (chromium)
+   Build for Testing
+   Build Project
+   Validate Dependencies
+   Lint Code
+   Test
+   Type Check
+   Performance Audit (mobile)
+   Performance Audit (desktop)
+   Fro Bot
+   Setup and Cache
+   Setup E2E Environment
+   Renovate / Renovate
    ```
 
    **Optional additional checks:**
@@ -87,7 +114,7 @@ If you prefer granular control, you can require individual workflow jobs:
 # Configure comprehensive branch protection
 gh api repos/marcusrbrown/mrbro.dev/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["Quality Gate","Test Summary & Badge Generation","Performance Summary"]}' \
+  --field required_status_checks='{"strict":true,"contexts":["Test Notifications","Test Summary & Badge Generation","Performance Summary","Quality Gate","E2E Tests (chromium)","Build for Testing","Build Project","Validate Dependencies","Lint Code","Test","Type Check","Performance Audit (mobile)","Performance Audit (desktop)","Fro Bot","Setup and Cache","Setup E2E Environment","Renovate / Renovate"]}' \
   --field enforce_admins=false \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true,"require_code_owner_reviews":true}' \
   --field restrictions=null \

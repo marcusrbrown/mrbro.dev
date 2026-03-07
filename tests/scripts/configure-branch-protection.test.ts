@@ -6,11 +6,11 @@ describe('configure-branch-protection script payload', () => {
     const payload = buildProtectionPayload(SCRIPT_CONFIG.requiredChecks)
 
     expect(payload.required_status_checks.strict).toBe(true)
-    expect(payload.required_status_checks.contexts).toEqual([
-      'Quality Gate',
-      'Test Summary & Badge Generation',
-      'Performance Summary',
-    ])
+    expect(payload.required_status_checks.contexts).toHaveLength(17)
+    expect(payload.required_status_checks.contexts).toContain('Quality Gate')
+    expect(payload.required_status_checks.contexts).toContain('Test Summary & Badge Generation')
+    expect(payload.required_status_checks.contexts).toContain('Performance Summary')
+    expect(payload.required_status_checks.contexts).toContain('Renovate / Renovate')
   })
 
   it('keeps review and deletion protections enabled', () => {
