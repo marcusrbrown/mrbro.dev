@@ -12,10 +12,9 @@ The project uses multiple test suites that should be enforced as required status
 
 These are the main status checks that should be **required** for merge:
 
-1. **`tests/comprehensive`** - Unified status check from the Status Checks workflow
-   - Aggregates all other test suite results
-   - Provides single source of truth for PR readiness
-   - **Recommended**: Use this as the primary required check
+1. **`Quality Gate`** - Consolidated CI gate from `CI` workflow
+2. **`Test Summary & Badge Generation`** - Consolidated E2E gate from `E2E Tests` workflow
+3. **`Performance Summary`** - Consolidated performance gate from `Performance Testing` workflow
 
 ### Individual Test Suite Checks (Alternative)
 
@@ -58,14 +57,18 @@ If you prefer granular control, you can require individual workflow jobs:
    **Required checks to add:**
 
    ```text
-   tests/comprehensive
+   Quality Gate
+   Test Summary & Badge Generation
+   Performance Summary
    ```
 
    **Optional additional checks:**
 
    ```text
-   Quality Gate
-   Test Summary & Badge Generation
+   Build Project
+   Test
+   Type Check
+   E2E Tests (chromium)
    Performance Audit (desktop)
    Performance Audit (mobile)
    ```
@@ -82,20 +85,20 @@ If you prefer granular control, you can require individual workflow jobs:
 
 ```bash
 # Configure comprehensive branch protection
-gh api repos/marcusrbrown/marcusrbrown.github.io/branches/main/protection \
+gh api repos/marcusrbrown/mrbro.dev/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["tests/comprehensive"]}' \
-  --field enforce_admins=true \
+  --field required_status_checks='{"strict":true,"contexts":["Quality Gate","Test Summary & Badge Generation","Performance Summary"]}' \
+  --field enforce_admins=false \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true,"require_code_owner_reviews":true}' \
   --field restrictions=null \
   --field allow_force_pushes=false \
   --field allow_deletions=false
 
 # Alternative: More granular status checks
-gh api repos/marcusrbrown/marcusrbrown.github.io/branches/main/protection \
+gh api repos/marcusrbrown/mrbro.dev/branches/main/protection \
   --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["Quality Gate","Test Summary & Badge Generation","Performance Audit"]}' \
-  --field enforce_admins=true \
+  --field required_status_checks='{"strict":true,"contexts":["Build Project","Test","Type Check","E2E Tests (chromium)","Performance Audit (desktop)","Performance Audit (mobile)"]}' \
+  --field enforce_admins=false \
   --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true,"require_code_owner_reviews":true}' \
   --field restrictions=null \
   --field allow_force_pushes=false \
@@ -113,20 +116,20 @@ pnpm run configure:branch-protection
 
 ## Status Check Behaviors
 
-### Unified Status Check (`tests/comprehensive`)
+### Consolidated Required Checks
 
 **Advantages:**
 
-- ✅ Single required check simplifies PR management
-- ✅ Provides comprehensive status in one place
-- ✅ Automatically aggregates all test results
+- ✅ Small required-check set that mirrors real workflow gates
+- ✅ Stable naming that matches current CI/E2E/performance job names
+- ✅ Clear ownership of each gate by workflow
 - ✅ Easier to manage and understand
 
 **Status States:**
 
-- `success` - All test suites passed
-- `failure` - One or more test suites failed
-- `pending` - Tests are still running
+- `success` - The associated workflow gate passed
+- `failure` - One or more upstream jobs failed
+- `pending` - The gate is still evaluating
 
 ### Individual Status Checks
 
