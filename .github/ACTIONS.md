@@ -37,7 +37,7 @@ Deploys to GitHub Pages at `mrbro.dev`.
 Runs on:
 
 - Pull requests to `main`
-- Manual workflow dispatch (with selectable browser and test-type)
+- Manual workflow dispatch
 
 **Jobs:**
 

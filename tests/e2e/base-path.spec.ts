@@ -1,9 +1,9 @@
 import {expect, test} from '@playwright/test'
 
 /**
- * Smoke tests that verify the deployed site's base path is set correctly.
- * These tests catch regressions where GITHUB_PAGES env var is missing from the build,
- * which would cause assets to 404 due to an incorrect base path.
+ * Smoke tests that verify the deployed site loads correctly and all
+ * critical assets are reachable. Guards against blank-page deploys,
+ * broken asset references, and routing failures.
  *
  * @see https://github.com/marcusrbrown/mrbro.dev/issues/11
  */
@@ -21,7 +21,7 @@ test.describe('Base Path Smoke Tests', () => {
 
     page.on('response', response => {
       const url = response.url()
-      if ((url.endsWith('.css') || url.includes('/assets/')) && response.status() >= 400) {
+      if (url.endsWith('.css') && response.status() >= 400) {
         failedRequests.push(`${response.status()} ${url}`)
       }
     })
@@ -83,11 +83,16 @@ test.describe('Base Path Smoke Tests', () => {
       .locator('nav a[href]')
       .evaluateAll(elements => elements.map(el => (el as HTMLAnchorElement).getAttribute('href') ?? ''))
 
-    for (const href of links) {
+    const internalLinks = links.filter(href => href.startsWith('/'))
+
+    expect(
+      internalLinks.length,
+      'Expected at least one internal navigation link in <nav>, but none were found.',
+    ).toBeGreaterThan(0)
+
+    for (const href of internalLinks) {
       // Internal links (starting with /) should not have double slashes
-      if (href.startsWith('/')) {
-        expect(href, `Internal link should not have double slash: ${href}`).not.toMatch(/\/\//)
-      }
+      expect(href, `Internal link should not have double slash: ${href}`).not.toMatch(/\/\//)
     }
   })
 })

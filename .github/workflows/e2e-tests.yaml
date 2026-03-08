@@ -284,7 +284,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.get-app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          STATUS: ${{ needs.test-summary.result }}
+          STATUS: ${{ (needs.e2e-tests.result == 'success' && needs.visual-regression.result == 'success' && needs.accessibility-tests.result == 'success') && 'success' || 'failure' }}
           E2E_RESULT: ${{ needs.e2e-tests.result }}
           VISUAL_RESULT: ${{ needs.visual-regression.result }}
           A11Y_RESULT: ${{ needs.accessibility-tests.result }}
