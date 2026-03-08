@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import {expect, test} from '@playwright/test'
+import {expect, test, type Page} from '@playwright/test'
 
 import {testData} from '../e2e/fixtures/test-data'
 
@@ -7,6 +7,31 @@ import {testData} from '../e2e/fixtures/test-data'
  * Color contrast compliance tests across theme variations
  * Tests WCAG 2.1 AA color contrast requirements (4.5:1 for normal text, 3:1 for large text)
  */
+
+/**
+ * Switch to a specific theme using the React theme toggle button.
+ * Uses the actual toggle button (not page.evaluate) so ThemeContext stays in sync,
+ * avoiding a mixed CSS-variable state where inline styles (ThemeContext) and
+ * stylesheet rules ([data-theme] selectors) use different theme values.
+ */
+async function switchToTheme(page: Page, targetTheme: 'light' | 'dark'): Promise<void> {
+  const htmlElement = page.locator('html')
+  let attempts = 0
+  const maxAttempts = 5
+
+  while (attempts < maxAttempts) {
+    const currentTheme = await htmlElement.getAttribute('data-theme')
+    if (currentTheme === targetTheme) break
+    await page.click('[data-testid="theme-toggle"]')
+    await page.waitForTimeout(500)
+    attempts++
+  }
+
+  await expect(htmlElement).toHaveAttribute('data-theme', targetTheme, {timeout: 10000})
+  // Move mouse away from the toggle so hover state does not affect the axe scan
+  await page.mouse.move(0, 0)
+  await page.waitForTimeout(200)
+}
 
 test.describe('Color Contrast Compliance Tests', () => {
   const themes = ['light', 'dark'] as const
@@ -17,16 +42,7 @@ test.describe('Color Contrast Compliance Tests', () => {
         await page.goto('/')
         await page.waitForLoadState('networkidle')
 
-        // Set specific theme
-        await page.evaluate(themeName => {
-          document.documentElement.dataset.theme = themeName
-        }, theme)
-
-        const htmlElement = page.locator('html')
-        await expect(htmlElement).toHaveAttribute('data-theme', theme)
-
-        // Wait for theme transition to complete
-        await page.waitForTimeout(400)
+        await switchToTheme(page, theme)
 
         // Run color contrast specific audit
         const accessibilityScanResults = await new AxeBuilder({page})
@@ -58,12 +74,7 @@ test.describe('Color Contrast Compliance Tests', () => {
           await page.goto(path)
           await page.waitForLoadState('networkidle')
 
-          // Set theme
-          await page.evaluate(themeName => {
-            document.documentElement.dataset.theme = themeName
-          }, theme)
-
-          await page.waitForTimeout(400)
+          await switchToTheme(page, theme)
 
           // Test color contrast for the specific page
           const accessibilityScanResults = await new AxeBuilder({page})
@@ -83,12 +94,7 @@ test.describe('Color Contrast Compliance Tests', () => {
       await page.waitForLoadState('networkidle')
 
       for (const theme of themes) {
-        // Set theme
-        await page.evaluate(themeName => {
-          document.documentElement.dataset.theme = themeName
-        }, theme)
-
-        await page.waitForTimeout(400)
+        await switchToTheme(page, theme)
 
         // Test navigation color contrast
         const accessibilityScanResults = await new AxeBuilder({page})
@@ -105,11 +111,7 @@ test.describe('Color Contrast Compliance Tests', () => {
       await page.waitForLoadState('networkidle')
 
       for (const theme of themes) {
-        await page.evaluate(themeName => {
-          document.documentElement.dataset.theme = themeName
-        }, theme)
-
-        await page.waitForTimeout(400)
+        await switchToTheme(page, theme)
 
         // Test buttons and interactive elements
         const buttons = page.locator('button, .button, .btn, .theme-toggle')
@@ -136,11 +138,7 @@ test.describe('Color Contrast Compliance Tests', () => {
       await page.waitForLoadState('networkidle')
 
       for (const theme of themes) {
-        await page.evaluate(themeName => {
-          document.documentElement.dataset.theme = themeName
-        }, theme)
-
-        await page.waitForTimeout(400)
+        await switchToTheme(page, theme)
 
         // Test project cards
         const cards = page.locator('.project-card, .card, [data-testid="project-card"]')
@@ -208,11 +206,7 @@ test.describe('Color Contrast Compliance Tests', () => {
         await page.waitForLoadState('networkidle')
 
         for (const theme of themes) {
-          await page.evaluate(themeName => {
-            document.documentElement.dataset.theme = themeName
-          }, theme)
-
-          await page.waitForTimeout(400)
+          await switchToTheme(page, theme)
 
           const accessibilityScanResults = await new AxeBuilder({page}).withRules(['color-contrast']).analyze()
 

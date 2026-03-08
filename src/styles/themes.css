@@ -139,8 +139,8 @@
   --color-card-bg: #1e293b;
   --color-card-border: #334155;
   --color-card-text: #f1f5f9;
-  --color-link: #3b82f6;
-  --color-link-hover: #0ea5e9;
+  --color-link: #60a5fa;
+  --color-link-hover: #38bdf8;
 
   /* Dark theme overlays */
   --color-overlay: rgba(0, 0, 0, 0.7);
