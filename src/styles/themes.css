@@ -188,6 +188,8 @@
     --color-error: #ef4444;
     --color-warning: #f59e0b;
     --color-success: #22c55e;
+    --color-link: #60a5fa;
+    --color-link-hover: #38bdf8;
   }
 }
 
