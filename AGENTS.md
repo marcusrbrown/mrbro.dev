@@ -1,6 +1,6 @@
 # AGENTS.md
 
-**Generated:** 2026-03-06 | **Commit:** 4ad392b | **Branch:** main
+**Generated:** 2026-03-09 | **Commit:** 2e03f14 | **Branch:** main
 
 ## Overview
 
@@ -20,9 +20,11 @@ src/
 └── styles/        # Global CSS
 scripts/           # 10 build/test automation scripts (see scripts/AGENTS.md)
 tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
+.agents/
+└── skills/        # Agent skill definitions (agent-browser, playwright-mcp)
 .github/
-├── workflows/     # deploy.yaml, ci.yaml, e2e-tests.yaml, performance.yaml
-└── actions/setup/ # Reusable CI setup action
+├── workflows/     # deploy.yaml, ci.yaml, e2e-tests.yaml, performance.yaml, fro-bot.yaml
+└── actions/setup/ # Reusable CI setup action (Playwright install, pnpm cache)
 ```
 
 ## Where to Look
@@ -38,6 +40,8 @@ tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
 | Build analysis | `scripts/analyze-build.ts` | Bundle size budgets + CI summaries |
 | Test dashboard | `scripts/test-dashboard.mjs` | Aggregated health scoring |
 | CI/CD | `.github/workflows/deploy.yaml` | Main pipeline: lint → test → build → deploy |
+| E2E CI | `.github/workflows/e2e-tests.yaml` | Visual, accessibility, functional E2E jobs; PR notification |
+| Agent skills | `.agents/skills/` | Browser automation skill definitions (`agent-browser`, `playwright-mcp`) |
 | Visual baselines | `tests/visual/screenshots/` | 222 baseline images |
 
 ## Code Map (Key Symbols)
