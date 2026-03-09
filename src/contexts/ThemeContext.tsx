@@ -15,7 +15,7 @@ const defaultLightTheme: Theme = {
   name: 'Light',
   mode: 'light',
   colors: {
-    primary: '#1d4ed8',
+    primary: '#2563eb',
     secondary: '#4b5563',
     accent: '#0ea5e9',
     background: '#ffffff',
@@ -34,7 +34,7 @@ const defaultDarkTheme: Theme = {
   name: 'Dark',
   mode: 'dark',
   colors: {
-    primary: '#2563eb',
+    primary: '#1d4ed8',
     secondary: '#cbd5e1',
     accent: '#0ea5e9',
     background: '#0f172a',

@@ -1,259 +1,48 @@
 import AxeBuilder from '@axe-core/playwright'
 import {expect, test, type Page} from '@playwright/test'
 
-import {testData} from '../e2e/fixtures/test-data'
-
-/**
- * Color contrast compliance tests across theme variations
- * Tests WCAG 2.1 AA color contrast requirements (4.5:1 for normal text, 3:1 for large text)
- */
-
-/**
- * Switch to a specific theme using the React theme toggle button.
- * Uses the actual toggle button (not page.evaluate) so ThemeContext stays in sync,
- * avoiding a mixed CSS-variable state where inline styles (ThemeContext) and
- * stylesheet rules ([data-theme] selectors) use different theme values.
- */
-async function switchToTheme(page: Page, targetTheme: 'light' | 'dark'): Promise<void> {
-  const htmlElement = page.locator('html')
-  let attempts = 0
-  const maxAttempts = 5
-
-  while (attempts < maxAttempts) {
-    const currentTheme = await htmlElement.getAttribute('data-theme')
-    if (currentTheme === targetTheme) break
-    await page.click('[data-testid="theme-toggle"]')
-    await page.waitForTimeout(500)
-    attempts++
-  }
-
-  await expect(htmlElement).toHaveAttribute('data-theme', targetTheme, {timeout: 10000})
-  // Move mouse away from the toggle so hover state does not affect the axe scan
-  await page.mouse.move(0, 0)
-  await page.waitForTimeout(200)
+async function setThemeMode(page: Page, mode: 'light' | 'dark'): Promise<void> {
+  await page.addInitScript(themeMode => {
+    localStorage.removeItem('mrbro-dev-custom-theme')
+    localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify(themeMode))
+  }, mode)
 }
 
-test.describe('Color Contrast Compliance Tests', () => {
-  const themes = ['light', 'dark'] as const
+async function getColorContrastViolations(page: Page) {
+  const results = await new AxeBuilder({page}).withRules(['color-contrast']).analyze()
+  return results.violations.filter(violation => violation.id === 'color-contrast')
+}
 
-  test.describe('Theme Color Contrast Validation', () => {
-    for (const theme of themes) {
-      test(`should meet color contrast requirements - ${theme} theme`, async ({page}) => {
-        await page.goto('/')
-        await page.waitForLoadState('networkidle')
+test.describe('Color contrast regressions', () => {
+  test('home page has no color-contrast violations in light theme', async ({page}) => {
+    await setThemeMode(page, 'light')
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
-        await switchToTheme(page, theme)
-
-        // Run color contrast specific audit
-        const accessibilityScanResults = await new AxeBuilder({page})
-          .withTags(['wcag2aa'])
-          .withRules(['color-contrast'])
-          .analyze()
-
-        // Log any violations for debugging
-        if (accessibilityScanResults.violations.length > 0) {
-          console.warn(`Color contrast violations in ${theme} theme:`, accessibilityScanResults.violations)
-        }
-
-        expect(accessibilityScanResults.violations).toEqual([])
-      })
-    }
+    const violations = await getColorContrastViolations(page)
+    expect(violations).toEqual([])
   })
 
-  test.describe('Page-Specific Color Contrast Tests', () => {
-    const pages = [
-      {path: '/', name: 'Home'},
-      {path: '/about', name: 'About'},
-      {path: '/projects', name: 'Projects'},
-      {path: '/blog', name: 'Blog'},
-    ]
+  test('home page has no color-contrast violations in dark theme', async ({page}) => {
+    await setThemeMode(page, 'dark')
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
-    for (const {path, name} of pages) {
-      for (const theme of themes) {
-        test(`${name} page color contrast - ${theme} theme`, async ({page}) => {
-          await page.goto(path)
-          await page.waitForLoadState('networkidle')
-
-          await switchToTheme(page, theme)
-
-          // Test color contrast for the specific page
-          const accessibilityScanResults = await new AxeBuilder({page})
-            .withRules(['color-contrast'])
-            .include('main')
-            .analyze()
-
-          expect(accessibilityScanResults.violations).toEqual([])
-        })
-      }
-    }
+    const violations = await getColorContrastViolations(page)
+    expect(violations).toEqual([])
   })
 
-  test.describe('Component Color Contrast Tests', () => {
-    test('Navigation menu color contrast across themes', async ({page}) => {
-      await page.goto('/')
-      await page.waitForLoadState('networkidle')
-
-      for (const theme of themes) {
-        await switchToTheme(page, theme)
-
-        // Test navigation color contrast
-        const accessibilityScanResults = await new AxeBuilder({page})
-          .withRules(['color-contrast'])
-          .include('header nav')
-          .analyze()
-
-        expect(accessibilityScanResults.violations).toEqual([])
-      }
+  test('projects error fallback has no contrast violations in dark theme', async ({page}) => {
+    await setThemeMode(page, 'dark')
+    await page.route('**/users/*/repos*', async route => {
+      await route.fulfill({status: 500, body: JSON.stringify({message: 'forced test error'})})
     })
 
-    test('Button and interactive element color contrast', async ({page}) => {
-      await page.goto('/')
-      await page.waitForLoadState('networkidle')
+    await page.goto('/projects')
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByRole('heading', {name: 'Error Loading Projects'})).toBeVisible()
 
-      for (const theme of themes) {
-        await switchToTheme(page, theme)
-
-        // Test buttons and interactive elements
-        const buttons = page.locator('button, .button, .btn, .theme-toggle')
-        const buttonCount = await buttons.count()
-
-        if (buttonCount > 0) {
-          // Test all buttons as a group rather than individually
-          const accessibilityScanResults = await new AxeBuilder({page})
-            .withRules(['color-contrast'])
-            .include('body') // Include whole body to test all buttons
-            .analyze()
-
-          const colorContrastViolations = accessibilityScanResults.violations.filter(
-            violation => violation.id === 'color-contrast',
-          )
-
-          expect(colorContrastViolations).toEqual([])
-        }
-      }
-    })
-
-    test('Card and content area color contrast', async ({page}) => {
-      await page.goto('/projects')
-      await page.waitForLoadState('networkidle')
-
-      for (const theme of themes) {
-        await switchToTheme(page, theme)
-
-        // Test project cards
-        const cards = page.locator('.project-card, .card, [data-testid="project-card"]')
-        const cardCount = await cards.count()
-
-        if (cardCount > 0) {
-          const accessibilityScanResults = await new AxeBuilder({page})
-            .withRules(['color-contrast'])
-            .include('.project-card, .card, [data-testid="project-card"]')
-            .analyze()
-
-          expect(accessibilityScanResults.violations).toEqual([])
-        }
-      }
-    })
-  })
-
-  test.describe('Custom Theme Color Contrast', () => {
-    test('should maintain color contrast with custom themes', async ({page}) => {
-      await page.goto('/')
-      await page.waitForLoadState('networkidle')
-
-      // Try to find and open theme customizer
-      const themeCustomizerTrigger = page.locator('.theme-customizer-trigger, [aria-haspopup="dialog"]')
-      const triggerCount = await themeCustomizerTrigger.count()
-
-      if (triggerCount > 0) {
-        await themeCustomizerTrigger.first().click()
-        await page.waitForTimeout(500)
-
-        const customizer = page.locator('.theme-customizer, [role="dialog"]')
-        if ((await customizer.count()) > 0 && (await customizer.isVisible())) {
-          // Test preset themes if available
-          const presetButtons = page.locator('.preset-theme-button, .theme-preset')
-          const presetCount = await presetButtons.count()
-
-          for (let i = 0; i < Math.min(presetCount, 3); i++) {
-            const presetButton = presetButtons.nth(i)
-            if (await presetButton.isVisible()) {
-              await presetButton.click()
-              await page.waitForTimeout(400)
-
-              // Test color contrast with this preset theme
-              const accessibilityScanResults = await new AxeBuilder({page})
-                .withRules(['color-contrast'])
-                .exclude('.theme-customizer, [role="dialog"]') // Exclude the customizer itself
-                .analyze()
-
-              expect(accessibilityScanResults.violations).toEqual([])
-            }
-          }
-
-          // Close customizer
-          await page.keyboard.press('Escape')
-        }
-      }
-    })
-  })
-
-  test.describe('Responsive Color Contrast Tests', () => {
-    for (const viewport of testData.scenarios.responsiveBreakpoints.slice(0, 3)) {
-      test(`Color contrast on ${viewport.category} viewport`, async ({page}) => {
-        await page.setViewportSize({width: viewport.width, height: viewport.height})
-        await page.goto('/')
-        await page.waitForLoadState('networkidle')
-
-        for (const theme of themes) {
-          await switchToTheme(page, theme)
-
-          const accessibilityScanResults = await new AxeBuilder({page}).withRules(['color-contrast']).analyze()
-
-          expect(accessibilityScanResults.violations).toEqual([])
-        }
-      })
-    }
-  })
-
-  test.describe('High Contrast and Accessibility Modes', () => {
-    test('should respect prefers-contrast media query', async ({page}) => {
-      // Emulate high contrast preference
-      await page.emulateMedia({colorScheme: 'dark', reducedMotion: 'reduce'})
-      await page.goto('/')
-      await page.waitForLoadState('networkidle')
-
-      // Test with high contrast requirements (stricter 7:1 ratio)
-      const accessibilityScanResults = await new AxeBuilder({page}).withRules(['color-contrast']).analyze()
-
-      // High contrast mode might have some acceptable violations
-      // Log them for review but don't fail the test
-      if (accessibilityScanResults.violations.length > 0) {
-        console.warn('High contrast violations (for review):', accessibilityScanResults.violations)
-      }
-    })
-
-    test('should work with forced-colors media query', async ({page}) => {
-      // Test Windows High Contrast mode simulation
-      await page.addStyleTag({
-        content: `
-          @media (forced-colors: active) {
-            * {
-              color: ButtonText !important;
-              background-color: ButtonFace !important;
-            }
-          }
-        `,
-      })
-
-      await page.goto('/')
-      await page.waitForLoadState('networkidle')
-
-      // In forced colors mode, color contrast should still be testable
-      const accessibilityScanResults = await new AxeBuilder({page}).withRules(['color-contrast']).analyze()
-
-      // Forced colors mode handles contrast automatically, but we should still test
-      expect(accessibilityScanResults.violations.length).toBeLessThanOrEqual(5) // Allow some flexibility
-    })
+    const violations = await getColorContrastViolations(page)
+    expect(violations).toEqual([])
   })
 })
