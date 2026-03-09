@@ -9,7 +9,7 @@ Multi-type testing: unit (Vitest), E2E/visual/a11y (Playwright), performance (Li
 | Unit (components) | `components/`    | Vitest                | `vite.config.ts` (embedded) |
 | Unit (hooks)      | `hooks/`         | Vitest                | `vite.config.ts`            |
 | Unit (utils)      | `utils/`         | Vitest                | `vite.config.ts`            |
-| E2E               | `e2e/pages/`     | Playwright            | `playwright.config.ts`      |
+| E2E               | `e2e/`           | Playwright            | `playwright.config.ts`      |
 | Visual            | `visual/`        | Playwright            | `playwright.config.ts`      |
 | Accessibility     | `accessibility/` | Playwright + axe-core | `playwright.config.ts`      |
 | Performance       | `performance/`   | Lighthouse CI         | `lhci.config.js`            |
@@ -18,6 +18,7 @@ Multi-type testing: unit (Vitest), E2E/visual/a11y (Playwright), performance (Li
 
 - `setup.ts` — Global Vitest setup (DOM mocks, theme providers, Shiki stubbing)
 - `visual/utils.ts` — Theme mocking + snapshot threshold configuration
+- `e2e/base-path.spec.ts` — Smoke tests: asset loading, blank-page guard, sub-page routing
 - `e2e/fixtures/` — Viewport configs + test data (2 files)
 - `e2e/utils/` — Navigation and test helpers (2 files)
 
