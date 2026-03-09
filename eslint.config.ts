@@ -3,7 +3,7 @@ import {defineConfig} from '@bfra.me/eslint-config'
 export default defineConfig(
   {
     name: 'marcusrbrown.github.io',
-    ignores: ['.ai/', '.claude/', '.github/chatmodes/', 'AGENTS.md', 'public/'],
+    ignores: ['.agents/skills/', '.ai/', '.claude/', '.github/chatmodes/', 'AGENTS.md', 'public/'],
     typescript: true,
     react: true,
     vitest: {

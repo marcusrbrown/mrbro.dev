@@ -119,7 +119,7 @@
 
 /* Dark theme definitions */
 [data-theme="dark"] {
-  --color-primary: #3b82f6;
+  --color-primary: #1d4ed8;
   --color-secondary: #94a3b8;
   --color-accent: #0ea5e9;
   --color-background: #0f172a;
@@ -139,8 +139,8 @@
   --color-card-bg: #1e293b;
   --color-card-border: #334155;
   --color-card-text: #f1f5f9;
-  --color-link: #3b82f6;
-  --color-link-hover: #0ea5e9;
+  --color-link: #60a5fa;
+  --color-link-hover: #38bdf8;
 
   /* Dark theme overlays */
   --color-overlay: rgba(0, 0, 0, 0.7);
@@ -152,7 +152,7 @@
   --color-code-bg: #0f172a;
   --color-code-text: #f1f5f9;
   --color-code-comment: #64748b;
-  --color-code-keyword: #3b82f6;
+  --color-code-keyword: #1d4ed8;
   --color-code-string: #22c55e;
   --color-code-number: #f59e0b;
   --color-code-function: #a855f7;
@@ -177,7 +177,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --color-primary: #3b82f6;
+    --color-primary: #1d4ed8;
     --color-secondary: #94a3b8;
     --color-accent: #0ea5e9;
     --color-background: #0f172a;
@@ -188,6 +188,8 @@
     --color-error: #ef4444;
     --color-warning: #f59e0b;
     --color-success: #22c55e;
+    --color-link: #60a5fa;
+    --color-link-hover: #38bdf8;
   }
 }
 

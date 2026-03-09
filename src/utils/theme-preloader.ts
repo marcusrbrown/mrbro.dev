@@ -32,7 +32,7 @@ const DEFAULT_DARK_THEME = {
   name: 'Dark',
   mode: 'dark' as const,
   colors: {
-    primary: '#3b82f6',
+    primary: '#1d4ed8',
     secondary: '#94a3b8',
     accent: '#0ea5e9',
     background: '#0f172a',
@@ -180,7 +180,7 @@ export const generateThemePreloaderScript = (): string => {
     name: 'Dark',
     mode: 'dark',
     colors: {
-      primary: '#3b82f6',
+      primary: '#1d4ed8',
       secondary: '#94a3b8',
       accent: '#0ea5e9',
       background: '#0f172a',
@@ -295,7 +295,7 @@ export const generateMinimalThemePreloaderScript = (): string => {
     var isDark = mode === 'system' ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) : mode === 'dark';
     var root = document.documentElement;
     if (isDark) {
-      root.style.setProperty('--color-primary', '#3b82f6');
+      root.style.setProperty('--color-primary', '#1d4ed8');
       root.style.setProperty('--color-background', '#0f172a');
       root.style.setProperty('--color-surface', '#1e293b');
       root.style.setProperty('--color-text', '#f1f5f9');

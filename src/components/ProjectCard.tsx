@@ -24,7 +24,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   const {imgRef, isLoaded, isError} = useProgressiveImage(imageUrl)
 
   return (
-    <div className="project-card" data-testid="project-card">
+    <div className="project-card" data-testid="project-card" tabIndex={0} role="article">
       {/* Project Image/Thumbnail Area */}
       <div className="project-card__image">
         <div className="project-card__image-placeholder">

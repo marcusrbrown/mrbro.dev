@@ -1336,9 +1336,9 @@ html {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--color-primary);
+  color: var(--color-link);
   background: transparent;
-  border: 2px solid var(--color-primary);
+  border: 2px solid var(--color-link);
   border-radius: 6px;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -1356,7 +1356,7 @@ html {
 }
 
 .project-gallery__view-more-button:focus {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-link);
   outline-offset: 2px;
 }
 

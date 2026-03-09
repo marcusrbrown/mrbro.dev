@@ -1,7 +1,14 @@
 import AxeBuilder from '@axe-core/playwright'
-import {expect, test} from '@playwright/test'
+import {expect, test, type Page} from '@playwright/test'
 
 import {testData} from '../e2e/fixtures/test-data'
+
+async function setThemeMode(page: Page, mode: 'light' | 'dark'): Promise<void> {
+  await page.addInitScript(themeMode => {
+    localStorage.removeItem('mrbro-dev-custom-theme')
+    localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify(themeMode))
+  }, mode)
+}
 
 /**
  * Accessibility audit tests for all main pages
@@ -20,22 +27,13 @@ test.describe('Page Accessibility Audits', () => {
   for (const {path, name} of pages) {
     test.describe(`${name} Page`, () => {
       test('should have no accessibility violations - light theme', async ({page}) => {
+        await setThemeMode(page, 'light')
         await page.goto(path)
 
-        // Wait for page to load completely
         await page.waitForLoadState('networkidle')
-
-        // Ensure light theme is active
-        const themeToggle = page.locator('.theme-toggle')
-
-        // First check current theme and toggle if needed to get to light
         const htmlElement = page.locator('html')
-        const currentTheme = await htmlElement.getAttribute('data-theme')
-        if (currentTheme !== 'light') {
-          await themeToggle.click()
-          await page.waitForTimeout(500) // Wait for theme transition
-        }
-        await expect(htmlElement).toHaveAttribute('data-theme', 'light') // Run accessibility audit
+        await expect(htmlElement).toHaveAttribute('data-theme', 'light')
+
         const accessibilityScanResults = await new AxeBuilder({page})
           .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
           .analyze()
@@ -44,74 +42,17 @@ test.describe('Page Accessibility Audits', () => {
       })
 
       test('should have no accessibility violations - dark theme', async ({page}) => {
+        await setThemeMode(page, 'dark')
         await page.goto(path)
-
-        // Wait for page to load completely
         await page.waitForLoadState('networkidle')
-
-        // Ensure dark theme is active
-        const themeToggle = page.locator('.theme-toggle')
         const htmlElement = page.locator('html')
-
-        // Click the theme toggle until we reach dark mode
-        let attempts = 0
-        const maxAttempts = 4 // light → dark → system → light → dark
-        while (attempts < maxAttempts) {
-          const currentTheme = await htmlElement.getAttribute('data-theme')
-          if (currentTheme === 'dark') {
-            break
-          }
-          await themeToggle.click({timeout: 5000})
-          await page.waitForTimeout(1000) // Allow theme change to process
-          attempts++
-        }
-
-        // Verify theme change completed successfully before proceeding
         await expect(htmlElement).toHaveAttribute('data-theme', 'dark', {timeout: 5000})
 
-        // Run accessibility audit
         const accessibilityScanResults = await new AxeBuilder({page})
           .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
           .analyze()
 
         expect(accessibilityScanResults.violations).toEqual([])
-      })
-
-      test('should meet color contrast requirements across all themes', async ({page}) => {
-        await page.goto(path)
-        await page.waitForLoadState('networkidle')
-
-        for (const theme of ['light', 'dark'] as const) {
-          // Switch theme properly using the theme toggle button
-          let currentTheme = await page.getAttribute('html', 'data-theme')
-          let attempts = 0
-          const maxAttempts = 5
-
-          // Keep clicking until we reach the desired theme (handles the 3-state cycle)
-          while (currentTheme !== theme && attempts < maxAttempts) {
-            await page.click('[data-testid="theme-toggle"]')
-            await page.waitForTimeout(500) // Wait for theme transition
-            currentTheme = await page.getAttribute('html', 'data-theme')
-            attempts++
-          }
-
-          // Wait for theme change to take effect
-          const htmlElement = page.locator('html')
-          await expect(htmlElement).toHaveAttribute('data-theme', theme, {timeout: 10000})
-
-          // Additional wait for CSS transitions
-          await page.waitForTimeout(500)
-
-          // Run color contrast audit specifically
-          const accessibilityScanResults = await new AxeBuilder({page}).withTags(['wcag2aa']).include('body').analyze()
-
-          // Filter for color contrast violations
-          const colorContrastViolations = accessibilityScanResults.violations.filter(
-            violation => violation.id === 'color-contrast',
-          )
-
-          expect(colorContrastViolations).toEqual([])
-        }
       })
 
       // Test responsive accessibility
