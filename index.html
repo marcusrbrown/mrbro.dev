@@ -88,6 +88,28 @@
       }
     </style>
 
+    <!-- SPA Routing: Restore URL after GitHub Pages 404 redirect -->
+    <script>
+    // Single Page Apps for GitHub Pages — reverse redirect
+    // https://github.com/rafgraph/spa-github-pages
+    //
+    // 404.html encodes the original path in the query string (?p=/path&q=search).
+    // This script restores the original URL via history.replaceState before React mounts
+    // so the router sees the correct path on direct navigation or page refresh.
+    (function () {
+      const search = window.location.search;
+      if (search.length > 1) {
+        const params = new URLSearchParams(search.slice(1));
+        const path = params.get('p');
+        if (path != null) {
+          const query = params.get('q');
+          const url = path + (query ? '?' + query.replace(/~and~/g, '&') : '') + window.location.hash;
+          window.history.replaceState(null, '', url);
+        }
+      }
+    })();
+    </script>
+
     <!-- Theme Preloader Script (FOUC Prevention) -->
     <script>
     /* Enhanced preloader script with custom theme support.
