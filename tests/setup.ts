@@ -86,30 +86,26 @@ beforeEach(() => {
     })
   }
 
-  // Mock fetch for CSS and other resource loading
-  if (!globalThis.fetch || typeof globalThis.fetch !== 'function') {
-    globalThis.fetch = vi.fn().mockImplementation(async (url: string | URL | Request) => {
-      const urlString = typeof url === 'string' ? url : url.toString()
+  // Always mock fetch to prevent happy-dom from making real HTTP requests (e.g. localhost:3000)
+  globalThis.fetch = vi.fn().mockImplementation(async (url: string | URL | Request) => {
+    const urlString = typeof url === 'string' ? url : url.toString()
 
-      // Mock CSS file requests
-      if (urlString.includes('.css')) {
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          text: async () => '/* mocked CSS */',
-          json: async () => ({}),
-          headers: new Headers({'content-type': 'text/css'}),
-        } as Response)
-      }
-
-      // Default mock response
+    if (urlString.includes('.css')) {
       return Promise.resolve({
         ok: true,
         status: 200,
-        text: async () => '',
+        text: async () => '/* mocked CSS */',
         json: async () => ({}),
-        headers: new Headers(),
+        headers: new Headers({'content-type': 'text/css'}),
       } as Response)
-    })
-  }
+    }
+
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      text: async () => '',
+      json: async () => ({}),
+      headers: new Headers(),
+    } as Response)
+  })
 })
