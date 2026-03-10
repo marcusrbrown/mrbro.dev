@@ -1,6 +1,6 @@
 # AGENTS.md
 
-**Generated:** 2026-03-10 | **Commit:** acee9b7 | **Branch:** main
+**Generated:** 2026-03-10 | **Commit:** ee5f670 | **Branch:** main
 
 ## Overview
 
@@ -14,7 +14,7 @@ src/
 ├── hooks/         # 9 custom hooks — PascalCase files! (see hooks/AGENTS.md)
 ├── contexts/      # ThemeContext — single provider wrapping App
 ├── pages/         # 4 route pages: Home, Blog, Projects, About
-├── utils/         # 12 utilities — heavily theme-oriented
+├── utils/         # 12 utilities — heavily theme-oriented (see utils/AGENTS.md)
 ├── types/         # TypeScript types, barrel export via index.ts
 ├── schemas/       # theme.schema.json for runtime validation
 └── styles/        # Global CSS
@@ -22,9 +22,13 @@ scripts/           # 14 build/test automation scripts (see scripts/AGENTS.md)
 tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
 .agents/
 └── skills/        # Agent skill definitions (agent-browser, playwright-mcp)
+.ai/plan/          # Feature implementation plans (reference only)
 .github/
-├── workflows/     # deploy.yaml, ci.yaml, e2e-tests.yaml, performance.yaml, fro-bot.yaml, fro-bot-autoheal.yaml, renovate.yaml, copilot-setup-steps.yaml
-└── actions/setup/ # Reusable CI setup action (Playwright install, pnpm cache)
+├── workflows/     # 8 workflows: deploy, ci, e2e-tests, performance, fro-bot, fro-bot-autoheal, renovate, copilot-setup-steps
+├── actions/setup/ # Reusable CI setup action (Node 22, pnpm, Playwright)
+├── agents/        # GitHub agent definitions (repo-maintainer)
+└── hooks/         # Copilot hooks (pre-tool-use guardrails)
+examples/          # Usage examples (button-form-styles, use-theme)
 ```
 
 ## Where to Look
@@ -53,6 +57,7 @@ tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
 | `UseThemeReturn` | Interface | `src/hooks/UseTheme.ts:5` | Contract for useTheme hook |
 | `AppContent` | Component | `src/App.tsx:13` | Routes + layout |
 | `detectSystemPreference` | Function | `src/contexts/ThemeContext.tsx:57` | System dark/light detection |
+| `presetThemes` | Constant | `src/utils/preset-themes.ts:15` | 12 preset theme definitions |
 
 ## Conventions (Deviations Only)
 
@@ -111,4 +116,4 @@ pnpm badges                 # Update README badges
 - **No env vars required**: `VITE_GITHUB_TOKEN` optional for higher GitHub API rate limits
 - **Accessibility mandatory**: WCAG 2.1 AA — all interactive elements keyboard-accessible, reduced motion respected
 - **PR format**: Conventional commits (`feat:`, `fix:`, `docs:`, `test:`, `perf:`, `refactor:`)
-- **Subdirectory AGENTS.md**: See `src/components/`, `src/hooks/`, `scripts/`, `tests/`
+- **Subdirectory AGENTS.md**: See `src/components/`, `src/hooks/`, `src/utils/`, `scripts/`, `tests/`

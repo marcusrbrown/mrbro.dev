@@ -1,6 +1,6 @@
 # scripts/
 
-10 CI/build automation scripts for bundle analysis, performance monitoring, and test orchestration.
+14 CI/build automation scripts for bundle analysis, performance monitoring, test orchestration, and repo management.
 
 ## Execution
 
@@ -33,11 +33,20 @@
 
 ### Artifact Management
 
-| Script                           | Role                                                                     |
-| -------------------------------- | ------------------------------------------------------------------------ |
-| `artifact-management.mjs`        | Automated cleanup — coverage/results 30 days, visual baselines permanent |
-| `visual-artifact-manager.mjs`    | Handles diff/failure snapshots for visual regression                     |
-| `configure-branch-protection.ts` | Automates GitHub repository branch protection rulesets                   |
+| Script                        | Role                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `artifact-management.mjs`     | Automated cleanup — coverage/results 30 days, visual baselines permanent |
+| `visual-artifact-manager.mjs` | Handles diff/failure snapshots for visual regression                     |
+
+### Repository Management
+
+| Script                           | Role                                                   |
+| -------------------------------- | ------------------------------------------------------ |
+| `configure-branch-protection.ts` | Automates GitHub repository branch protection rulesets |
+| `branch-protection-config.ts`    | Branch protection ruleset configuration definitions    |
+| `branch-protection-api.ts`       | GitHub API client for branch protection operations     |
+| `branch-protection-gh.ts`        | GitHub CLI wrapper for branch protection management    |
+| `apply-repo-settings.ts`         | Applies repository-level settings via GitHub API       |
 
 ## CI Integration
 
