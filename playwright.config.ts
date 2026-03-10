@@ -19,8 +19,7 @@ export default defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
 
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
 
   // Reporter to use
   reporter: [
@@ -148,8 +147,7 @@ export default defineConfig({
       },
       // Visual comparison settings
       expect: {
-        // Optimized timeout for CI performance
-        timeout: process.env.CI ? 7500 : 5000,
+        timeout: process.env.CI ? 5000 : 5000,
 
         // Visual comparison settings optimized for cross-platform consistency
         toMatchSnapshot: {

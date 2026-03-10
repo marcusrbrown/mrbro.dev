@@ -1,14 +1,4 @@
-import type {Page, TestInfo} from '@playwright/test'
-
-/**
- * Visual test thresholds for different test scenarios
- */
-export const VISUAL_THRESHOLDS = {
-  components: 0.08, // Stricter for isolated components
-  pages: 0.12, // Standard for full pages
-  responsive: 0.15, // More lenient for responsive breakpoints
-  themes: 0.1, // Moderate for theme variations
-} as const
+import type {Page} from '@playwright/test'
 
 /**
  * Mock GitHub API data for visual tests
@@ -154,62 +144,7 @@ export async function setupGitHubAPIMocking(page: Page): Promise<void> {
   })
 }
 
-/**
- * Get appropriate threshold for test type
- */
-export function getThreshold(testType: keyof typeof VISUAL_THRESHOLDS): number {
-  return VISUAL_THRESHOLDS[testType]
-}
-
-/**
- * Utility functions for visual regression testing
- * Provides consistent setup and helpers for screenshot comparisons
- */
-
-/**
- * Theme modes available for visual testing
- */
 export type ThemeMode = 'light' | 'dark' | 'system'
-
-/**
- * Responsive breakpoints for visual testing
- */
-export interface ResponsiveBreakpoint {
-  name: string
-  width: number
-  height: number
-  deviceScaleFactor?: number
-  isMobile?: boolean
-}
-
-export const VISUAL_BREAKPOINTS: ResponsiveBreakpoint[] = [
-  {
-    name: 'mobile',
-    width: 375,
-    height: 667,
-    deviceScaleFactor: 2,
-    isMobile: true,
-  },
-  {
-    name: 'tablet',
-    width: 768,
-    height: 1024,
-    deviceScaleFactor: 2,
-    isMobile: true,
-  },
-  {
-    name: 'desktop',
-    width: 1024,
-    height: 768,
-    deviceScaleFactor: 1,
-  },
-  {
-    name: 'large-desktop',
-    width: 1440,
-    height: 900,
-    deviceScaleFactor: 1,
-  },
-]
 
 /**
  * Prepare page for visual testing with theme and content setup
@@ -242,12 +177,8 @@ export async function preparePageForVisualTest(
   if (waitForContent) {
     await page.waitForLoadState('networkidle')
 
-    // Wait for any lazy-loaded content and theme to fully apply
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(300)
   }
-
-  // Wait an additional moment for theme CSS properties to be fully applied
-  await page.waitForTimeout(300)
 
   // Disable animations for consistent screenshots
   await page.addStyleTag({
@@ -360,56 +291,7 @@ export async function setThemeMode(page: Page, theme: ThemeMode): Promise<void> 
     )
   }, theme)
 
-  // Wait longer for theme transition to complete and React to re-render
-  await page.waitForTimeout(500)
-}
-
-/**
- * Generate screenshot name based on test context
- */
-export function generateScreenshotName(
-  testInfo: TestInfo,
-  options: {
-    theme?: ThemeMode
-    breakpoint?: string
-    component?: string
-    suffix?: string
-  } = {},
-): string {
-  const {theme, breakpoint, component, suffix} = options
-
-  const parts = [testInfo.title.replaceAll(/\s+/g, '-').toLowerCase(), theme, breakpoint, component, suffix].filter(
-    Boolean,
-  )
-
-  return `${parts.join('-')}.png`
-}
-
-/**
- * Take a full page screenshot with consistent options
- */
-export async function takeVisualSnapshot(
-  page: Page,
-  testInfo: TestInfo,
-  options: {
-    theme?: ThemeMode
-    breakpoint?: string
-    component?: string
-    suffix?: string
-    fullPage?: boolean
-    clip?: {x: number; y: number; width: number; height: number}
-  } = {},
-): Promise<void> {
-  const {fullPage = true, clip} = options
-
-  const screenshotName = generateScreenshotName(testInfo, options)
-
-  await page.screenshot({
-    path: `tests/visual/screenshots/${screenshotName}`,
-    fullPage,
-    clip,
-    animations: 'disabled',
-  })
+  await page.waitForTimeout(200)
 }
 
 /**
@@ -440,22 +322,4 @@ export async function waitForComponentStable(page: Page, selector: string, timeo
 
   // Additional wait for any animations to settle
   await page.waitForTimeout(200)
-}
-
-/**
- * Hide dynamic elements that might cause visual test flakiness
- */
-export async function hideDynamicElements(page: Page): Promise<void> {
-  await page.addStyleTag({
-    content: `
-      /* Hide elements that might change between runs */
-      [data-testid="current-time"],
-      .timestamp,
-      .last-updated,
-      .loading-spinner,
-      .skeleton-loader {
-        visibility: hidden !important;
-      }
-    `,
-  })
 }
