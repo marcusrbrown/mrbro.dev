@@ -93,7 +93,7 @@ describe('github utilities', () => {
 
       const posts = await fetchBlogPosts('user/repo')
       expect(posts).toHaveLength(1)
-      expect(posts[0].title).toBe('Blog Post 1')
+      expect(posts[0]?.title).toBe('Blog Post 1')
     })
 
     it('should use correct API endpoint', async () => {
@@ -167,7 +167,7 @@ describe('github utilities', () => {
       const posts = await fetchBlogPosts('user/repo')
       // Only the issue with valid blog label should be returned
       expect(posts).toHaveLength(1)
-      expect(posts[0].title).toBe('Blog With Labels')
+      expect(posts[0]?.title).toBe('Blog With Labels')
     })
 
     it('should throw when response is not ok', async () => {

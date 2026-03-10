@@ -53,6 +53,10 @@ describe('preset-themes', () => {
     it('should return a theme by id', () => {
       const allThemes = getPresetThemes()
       const firstTheme = allThemes[0]
+      if (firstTheme == null) {
+        expect(firstTheme).toBeDefined()
+        return
+      }
       const found = getPresetThemeById(firstTheme.id)
       expect(found).toBeDefined()
       expect(found?.id).toBe(firstTheme.id)

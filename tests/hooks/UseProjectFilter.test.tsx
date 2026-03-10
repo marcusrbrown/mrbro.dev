@@ -123,7 +123,7 @@ describe('useProjectFilter', () => {
       })
 
       expect(result.current.filteredProjects).toHaveLength(1)
-      expect(result.current.filteredProjects[0].id).toBe('1')
+      expect(result.current.filteredProjects[0]?.id).toBe('1')
       expect(result.current.hasActiveFilters).toBe(true)
     })
 
@@ -172,7 +172,7 @@ describe('useProjectFilter', () => {
       })
 
       expect(result.current.filteredProjects).toHaveLength(1)
-      expect(result.current.filteredProjects[0].id).toBe('1')
+      expect(result.current.filteredProjects[0]?.id).toBe('1')
     })
 
     it('should toggle type filter off when same filter is set again', () => {
@@ -199,7 +199,7 @@ describe('useProjectFilter', () => {
       })
 
       expect(result.current.filteredProjects).toHaveLength(1)
-      expect(result.current.filteredProjects[0].id).toBe('1')
+      expect(result.current.filteredProjects[0]?.id).toBe('1')
     })
 
     it('should toggle status filter off when same filter is set again', () => {
@@ -241,7 +241,7 @@ describe('useProjectFilter', () => {
 
       // TypeScript project is active → matches both filters
       expect(result.current.filteredProjects).toHaveLength(1)
-      expect(result.current.filteredProjects[0].id).toBe('1')
+      expect(result.current.filteredProjects[0]?.id).toBe('1')
     })
   })
 

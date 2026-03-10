@@ -13,10 +13,8 @@ const mockPrefersReducedMotion = vi.mocked(prefersReducedMotion)
 const mockObserve = vi.fn()
 const mockUnobserve = vi.fn()
 const mockDisconnect = vi.fn()
-let _intersectionCallback: IntersectionObserverCallback
 
-const MockIntersectionObserver = vi.fn().mockImplementation((callback: IntersectionObserverCallback) => {
-  intersectionCallback = callback
+const MockIntersectionObserver = vi.fn().mockImplementation((_callback: IntersectionObserverCallback) => {
   return {
     observe: mockObserve,
     unobserve: mockUnobserve,
@@ -31,8 +29,7 @@ describe('useScrollAnimation', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     mockPrefersReducedMotion.mockReturnValue(false)
-    MockIntersectionObserver.mockImplementation((callback: IntersectionObserverCallback) => {
-      intersectionCallback = callback
+    MockIntersectionObserver.mockImplementation((_callback: IntersectionObserverCallback) => {
       return {
         observe: mockObserve,
         unobserve: mockUnobserve,
