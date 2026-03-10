@@ -19,7 +19,7 @@ export default defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
 
-  // Opt out of parallel tests on CI
+  // Sequential on CI to avoid screenshot flakiness under resource contention
   workers: process.env.CI ? 1 : undefined,
 
   // Reporter to use
@@ -146,19 +146,8 @@ export default defineConfig({
         video: 'off',
         trace: 'retain-on-failure',
       },
-      // Visual comparison settings
       expect: {
-        // Optimized timeout for CI performance
-        timeout: process.env.CI ? 7500 : 5000,
-
-        // Visual comparison settings optimized for cross-platform consistency
-        toMatchSnapshot: {
-          // Higher threshold for visual tests to handle cross-platform rendering differences
-          threshold: 0.25,
-
-          // Maximum different pixels allowed (helps with font rendering differences)
-          maxDiffPixels: 2000,
-        },
+        timeout: 5000,
       },
     },
   ],
