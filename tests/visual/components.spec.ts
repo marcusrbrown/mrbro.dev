@@ -28,18 +28,18 @@ test.describe('UI Components', () => {
     test('Header - navigation states', async ({page}) => {
       await page.goto('/')
       await preparePageForVisualTest(page, {theme: 'light'})
-      await waitForComponentStable(page, 'header.header')
 
       const headerElement = page.locator('header.header')
 
       await page.setViewportSize({width: 1440, height: 900})
+      await waitForComponentStable(page, 'header.header')
       await headerElement.screenshot({
         path: 'tests/visual/screenshots/header-desktop-navigation.png',
         animations: 'disabled',
       })
 
       await page.setViewportSize({width: 375, height: 667})
-      await page.waitForTimeout(300)
+      await waitForComponentStable(page, 'header.header')
       await headerElement.screenshot({
         path: 'tests/visual/screenshots/header-mobile-navigation.png',
         animations: 'disabled',

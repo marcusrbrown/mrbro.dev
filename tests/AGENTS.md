@@ -17,14 +17,14 @@ Multi-type testing: unit (Vitest), E2E/visual/a11y (Playwright), performance (Li
 ## Key Files
 
 - `setup.ts` — Global Vitest setup (DOM mocks, theme providers, Shiki stubbing)
-- `visual/utils.ts` — Theme mocking + snapshot threshold configuration
+- `visual/utils.ts` — Theme mocking + visual test helpers
 - `e2e/base-path.spec.ts` — Smoke tests: asset loading, blank-page guard, sub-page routing
 - `e2e/fixtures/` — Viewport configs + test data (2 files)
 - `e2e/utils/` — Navigation and test helpers (2 files)
 
 ## Test Matrices
 
-- **Visual**: 3 themes (light/dark/custom) × 4 breakpoints (375/768/1024/1440px)
+- **Visual**: 2 themes (light/dark) × 2 breakpoints (375/1440px), ~28 tests
 - **E2E**: 3 browsers (Chromium, Firefox, WebKit)
 - **Accessibility**: WCAG 2.1 AA across all routes
 
@@ -36,9 +36,9 @@ Multi-type testing: unit (Vitest), E2E/visual/a11y (Playwright), performance (Li
 
 ## Visual Baselines
 
-- **Location**: `visual/screenshots/` — 222 baseline images
-- **Retention**: Permanent (never auto-cleaned)
-- **Update**: `pnpm test:visual:update` regenerates all baselines
+- **Location**: `visual/screenshots/` — ~30 screenshot images
+- **Note**: Screenshots are generated per-run, not compared via `toMatchSnapshot()`
+- **Update**: `pnpm test:visual:update` regenerates all screenshots
 
 ## Health Dashboard Weights
 
