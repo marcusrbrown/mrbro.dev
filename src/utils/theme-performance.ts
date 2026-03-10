@@ -7,6 +7,10 @@ import {prefersReducedMotion} from './accessibility'
 
 export type PerformanceOptimizationLevel = 'minimal' | 'standard' | 'aggressive'
 
+interface NavigatorWithMemory extends Navigator {
+  deviceMemory?: number
+}
+
 interface PerformanceState {
   isOptimizing: boolean
   level: PerformanceOptimizationLevel
@@ -197,7 +201,7 @@ export const getOptimalPerformanceLevel = (): PerformanceOptimizationLevel => {
   }
 
   // Check device memory (if available)
-  const deviceMemory = (navigator as any).deviceMemory
+  const deviceMemory = (navigator as NavigatorWithMemory).deviceMemory
   if (deviceMemory && deviceMemory < 4) {
     return 'standard'
   }
@@ -255,8 +259,7 @@ export const monitorThemePerformance = (): void => {
     observer.observe(document.documentElement, {attributes: true})
   }
 
-  // Store the monitored version for access
-  ;(globalThis as any).monitoredOptimizeForThemeSwitch = monitoredOptimize
+  ;(globalThis as Record<string, unknown>).monitoredOptimizeForThemeSwitch = monitoredOptimize
 }
 
 /**

@@ -82,7 +82,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   /**
    * Handles smooth scrolling to target sections
    */
-  const handleSmoothScroll = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleSmoothScroll = (event: React.SyntheticEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith('#')) {
       event.preventDefault()
       const targetId = href.slice(1)
@@ -142,7 +142,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             href={primaryHref}
             className="hero-cta-button hero-cta-button--primary"
             onClick={e => handleSmoothScroll(e, primaryHref)}
-            onKeyDown={e => handleKeyDown(e, () => handleSmoothScroll(e as any, primaryHref))}
+            onKeyDown={e => handleKeyDown(e, () => handleSmoothScroll(e, primaryHref))}
             aria-describedby="primary-cta-description"
           >
             <span>{primaryCTA}</span>
@@ -156,7 +156,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             href={secondaryHref}
             className="hero-cta-button hero-cta-button--secondary"
             onClick={e => handleSmoothScroll(e, secondaryHref)}
-            onKeyDown={e => handleKeyDown(e, () => handleSmoothScroll(e as any, secondaryHref))}
+            onKeyDown={e => handleKeyDown(e, () => handleSmoothScroll(e, secondaryHref))}
             aria-describedby="secondary-cta-description"
           >
             <span>{secondaryCTA}</span>

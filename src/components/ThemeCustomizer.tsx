@@ -6,7 +6,7 @@
  * Follows compound component pattern for modularity.
  */
 
-import type {ColorValue, HSLColor, ResolvedThemeMode, Theme, ThemeColors} from '../types'
+import type {ColorValue, HSLColor, ResolvedThemeMode, RGBColor, Theme, ThemeColors} from '../types'
 import {useCallback, useMemo, useRef, useState} from 'react'
 import {useTheme} from '../hooks/UseTheme'
 import {copyThemeToClipboard, exportTheme, importTheme, validateThemeFile} from '../utils/theme-export'
@@ -15,10 +15,11 @@ import {rgbToHsl, validateTheme, validateThemeAccessibility} from '../utils/them
 import PresetThemeGallery from './PresetThemeGallery'
 import ThemePreview from './ThemePreview'
 
-interface ParsedColor {
-  type: 'hsl' | 'rgb' | 'hex' | 'other'
-  value: HSLColor | {r: number; g: number; b: number} | string
-}
+type ParsedColor =
+  | {type: 'hsl'; value: HSLColor}
+  | {type: 'rgb'; value: RGBColor}
+  | {type: 'hex'; value: string}
+  | {type: 'other'; value: string}
 
 /**
  * Simple color parsing utility
@@ -159,10 +160,10 @@ const ColorInput: React.FC<ColorInputProps> = ({label, description, value, onCha
   const [hslValues, setHslValues] = useState<HSLColor>(() => {
     const parsed = parseColor(value)
     if (parsed.type === 'hsl') {
-      return parsed.value as HSLColor
+      return parsed.value
     }
     if (parsed.type === 'rgb') {
-      return rgbToHsl(parsed.value as any)
+      return rgbToHsl(parsed.value)
     }
     // Fallback for hex or other formats
     return {h: 0, s: 50, l: 50}
@@ -204,9 +205,9 @@ const ColorInput: React.FC<ColorInputProps> = ({label, description, value, onCha
         // Update HSL values if possible
         const parsed = parseColor(newValue)
         if (parsed.type === 'hsl') {
-          setHslValues(parsed.value as HSLColor)
+          setHslValues(parsed.value)
         } else if (parsed.type === 'rgb') {
-          setHslValues(rgbToHsl(parsed.value as any))
+          setHslValues(rgbToHsl(parsed.value))
         }
       }
     },
