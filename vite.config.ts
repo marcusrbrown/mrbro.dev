@@ -34,6 +34,14 @@ export default defineConfig({
 
   test: {
     environment: 'happy-dom',
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true,
+        },
+      },
+    },
     globals: true,
     setupFiles: './tests/setup.ts',
     // Exclude E2E, visual, and performance tests - they should only run through Playwright
