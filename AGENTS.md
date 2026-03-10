@@ -26,7 +26,6 @@ tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
 .github/
 ├── workflows/     # 8 workflows: deploy, ci, e2e-tests, performance, fro-bot, fro-bot-autoheal, renovate, copilot-setup-steps
 ├── actions/setup/ # Reusable CI setup action (Node 22, pnpm, Playwright)
-├── agents/        # GitHub agent definitions (repo-maintainer)
 └── hooks/         # Copilot hooks (pre-tool-use guardrails)
 examples/          # Usage examples (button-form-styles, use-theme)
 ```
