@@ -36,4 +36,4 @@
 ## Testing
 
 - **Location**: `tests/utils/` (9 test files — good coverage)
-- **Gap**: `animation-utils.ts`, `analytics.ts`, `theme-preloader.ts` lack dedicated tests
+- **Gap**: `animation-utils.ts`, `analytics.ts` lack dedicated tests
