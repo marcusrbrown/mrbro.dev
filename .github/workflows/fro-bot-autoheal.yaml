@@ -1,0 +1,192 @@
+---
+name: Fro Bot Autoheal
+
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: Custom autoheal prompt (leave empty for default)
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fro-bot-autoheal
+  cancel-in-progress: false
+
+env:
+  AUTOHEAL_PROMPT: |
+    Perform daily repository autohealing for mrbro.dev — a React 19+ /
+    TypeScript / Vite 7+ portfolio deployed to GitHub Pages.
+    Work through each category in order and prioritize minimal, reversible
+    changes. Read AGENTS.md for full project conventions before making changes.
+
+    1. ERRORED PRs
+       Find open PRs with failing CI checks. Only fix PRs whose branch
+       belongs to this repository (not forks). If a PR is from a fork or
+       the branch is not writable, skip it and log it under "Needs Human
+       Attention" in the summary.
+       For each fixable PR:
+       a. Check out the PR branch.
+       b. Read the failing check logs to diagnose the root cause.
+       c. Fix the issue (type errors, lint failures, test regressions,
+          build breaks).
+       d. Commit with a clear message and push to the PR branch.
+       e. Comment on the PR explaining what failed and what was fixed.
+
+    2. SECURITY
+       Review Dependabot/Renovate alerts and open PRs for vulnerable deps.
+       - If a security update PR exists but has conflicts or failures,
+         fix and push to that PR branch.
+       - For unaddressed critical/high advisories with no existing PR,
+         create a new PR with the remediation.
+       - Do NOT bulk-update unrelated deps in a security PR.
+
+    3. HEALTH & MAINTENANCE
+       Check for outdated dependencies:
+       - package.json: major version bumps.
+       - GitHub Actions workflow files: pin unpinned actions to full SHA;
+         update outdated pinned SHAs.
+       Create one PR per major dependency bump. Do NOT combine unrelated
+       upgrades.
+
+    4. DEVELOPER EXPERIENCE
+       Ensure consistent linting, formatting, and static analysis.
+       Run `pnpm lint` and `pnpm exec tsc --noEmit`; fix any failures.
+       Open a PR for all fixes — never commit directly to the default
+       branch. Group related lint/format fixes into a single PR.
+
+    5. PRODUCTION SITE REVIEW
+       Use `npx agent-browser` to review the live site at https://mrbro.dev.
+       Check each page: /, /about, /projects, /blog.
+
+       For each page:
+       a. Navigate: `npx agent-browser open "https://mrbro.dev{path}"`
+       b. Wait for load: `npx agent-browser wait --load networkidle`
+       c. Full screenshot: `npx agent-browser screenshot --full`
+       d. Snapshot interactive elements: `npx agent-browser snapshot -i`
+
+       Checks to perform:
+       - Pages load without errors or blank content.
+       - Navigation links work (click each nav ref, verify URL changes).
+       - Content sections are populated (use `npx agent-browser get text`
+         on main content areas; flag empty or placeholder text).
+       - Theme toggle functions (click toggle, screenshot before and after,
+         verify visual difference with `npx agent-browser diff screenshot`).
+       - Accessibility landmarks present (nav, main, footer visible in
+         snapshot).
+       - No broken images or missing assets.
+       - Mobile responsiveness: resize viewport to 375px width and verify
+         layout is not broken.
+
+       Before creating an issue for a finding, search open issues for an
+       existing report matching the same page and symptom. If a matching
+       open issue exists, reference it in the summary instead of creating
+       a duplicate.
+
+       For new issues, create a GitHub issue with:
+       - Page URL and description of the problem.
+       - Screenshot evidence (attach or reference).
+       - Severity: label `bug` for broken functionality, `enhancement` for
+         UX improvements.
+       Do NOT push code changes for site review findings. Issues only.
+
+       If `npx agent-browser` is not available or fails to launch, skip
+       this category and note "agent-browser unavailable" under
+       "Needs Human Attention" in the summary. Do not fail the workflow.
+       Close the browser when done: `npx agent-browser close`.
+
+    Hard boundaries:
+    - Never force-push, rewrite history, or delete branches.
+    - Never modify secrets, org settings, environments, or branch protection.
+    - Never change release workflows unless required to fix a failing run and
+      the change is scoped and explained.
+    - Site review (category 5) is observation-only: create issues, never
+      push fixes for visual or UX findings.
+    - Do not create multiple summary issues.
+
+    Project conventions (MUST follow for code changes):
+    - TypeScript strict mode: no `any`, no `@ts-ignore`, no `@ts-expect-error`
+    - Pure ESM only: no `require()`, no `module.exports`
+    - Hook files use PascalCase: UseTheme.ts, not useTheme.ts
+    - Named exports preferred over default exports
+    - Package manager: pnpm (not npm/yarn)
+    - YAML extension: .yaml, not .yml
+
+    OUTPUT FORMAT — SINGLE SUMMARY ISSUE
+    After completing all work, find an existing open issue titled
+    "Daily Autohealing Report — YYYY-MM-DD" (using today's UTC date).
+    If it exists, update its body. If not, create it.
+
+    The issue body MUST use this structure:
+
+    ## Daily Autohealing Report — YYYY-MM-DD (UTC)
+
+    ### Errored PRs
+    | PR | Failure | Fix | Status |
+    | --- | --- | --- | --- |
+    | #N | [root cause] | [what was fixed] | ✅ Fixed / ⚠️ Needs review |
+
+    ### Security
+    | Advisory / PR | Severity | Action Taken |
+    | --- | --- | --- |
+    | [advisory or #N] | Critical/High/Medium | [fix pushed / PR created / skipped] |
+
+    ### Health & Maintenance
+    | Dependency | From → To | PR |
+    | --- | --- | --- |
+    | [package] | vX → vY | #N |
+
+    ### Developer Experience
+    - [list of fixes applied]
+
+    ### Production Site Review
+    | Page | Status | Issues |
+    | --- | --- | --- |
+    | / | ✅ OK / ❌ Error | [#N or None] |
+    | /about | ✅ OK / ❌ Error | [#N or None] |
+    | /projects | ✅ OK / ❌ Error | [#N or None] |
+    | /blog | ✅ OK / ❌ Error | [#N or None] |
+
+    ### Needs Human Attention
+    - [items that could not be auto-fixed, with context]
+
+    If a section has no items, write "None" under the heading.
+    Do NOT create multiple issues. Do NOT comment on individual issues.
+    Produce exactly one summary issue per run.
+
+jobs:
+  fro-bot-autoheal:
+    name: Fro Bot Autoheal
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.FRO_BOT_PAT }}
+
+      - name: Setup project dependencies
+        uses: ./.github/actions/setup
+        with:
+          install-playwright: 'true'
+
+      - name: Run Fro Bot
+        uses: fro-bot/agent@0d4b30098e1329d39cf72d24db85a2ad559817a1 # v0.30.3
+        env:
+          OPENCODE_PROMPT_ARTIFACT: 'true'
+        with:
+          auth-json: ${{ secrets.OPENCODE_AUTH_JSON }}
+          github-token: ${{ secrets.FRO_BOT_PAT }}
+          model: ${{ vars.FRO_BOT_MODEL }}
+          omo-providers: ${{ secrets.OMO_PROVIDERS }}
+          prompt: ${{ github.event.inputs.prompt || env.AUTOHEAL_PROMPT }}
