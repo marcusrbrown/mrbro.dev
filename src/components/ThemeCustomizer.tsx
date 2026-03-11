@@ -486,10 +486,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
       setCustomTheme(editingTheme)
       onClose?.()
     } else {
-      console.warn('Theme validation failed')
-      // TODO: Show validation errors to user
+      showNotification('error', 'Theme validation failed')
     }
-  }, [editingTheme, setCustomTheme, onClose])
+  }, [editingTheme, setCustomTheme, onClose, showNotification])
 
   // Reset to current theme
   const handleReset = useCallback(() => {

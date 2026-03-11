@@ -212,4 +212,22 @@ describe('ThemeCustomizer', () => {
     expect(container.firstChild).toHaveClass('theme-customizer')
     expect(container.firstChild).toHaveClass('custom-class')
   })
+
+  it('shows error notification when theme validation fails on apply', async () => {
+    const themeValidation = await import('../../src/utils/theme-validation')
+    const validateSpy = vi.spyOn(themeValidation, 'validateTheme').mockReturnValueOnce(false)
+
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    const applyButton = screen.getByText('Apply Theme')
+    fireEvent.click(applyButton)
+
+    expect(screen.getByText('Theme validation failed')).toBeInTheDocument()
+
+    validateSpy.mockRestore()
+  })
 })
