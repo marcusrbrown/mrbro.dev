@@ -16,6 +16,15 @@ interface GitHubRepo {
   topics: string[]
 }
 
+interface GitHubGist {
+  id: string
+  description: string
+  html_url: string
+  created_at: string
+  updated_at: string
+  public: boolean
+}
+
 export const useGitHub = (username = 'marcusrbrown') => {
   const [repos, setRepos] = useState<GitHubRepo[]>([])
   const [projects, setProjects] = useState<Project[]>([])
@@ -57,8 +66,15 @@ export const useGitHub = (username = 'marcusrbrown') => {
         setProjects(projectsData)
 
         const blogResponse = await fetch(`https://api.github.com/users/${username}/gists`)
-        const blogData = await blogResponse.json()
-        setBlogPosts(blogData)
+        const blogData: GitHubGist[] = await blogResponse.json()
+        const mappedPosts: BlogPost[] = blogData.map(gist => ({
+          id: gist.id,
+          title: gist.description || 'Untitled',
+          summary: '',
+          date: gist.created_at,
+          url: gist.html_url,
+        }))
+        setBlogPosts(mappedPosts)
       } catch {
         setError('Failed to fetch data from GitHub')
       } finally {
