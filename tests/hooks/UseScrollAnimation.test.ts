@@ -203,3 +203,183 @@ describe('getStaggerDelay', () => {
     expect(getStaggerDelay(2, 100, 200)).toBe(500)
   })
 })
+
+// ---- Behavioral tests: IO callback fires, element in view, exit animation ----
+describe('useScrollAnimation — IntersectionObserver behavior', () => {
+  let capturedIOCallback: IntersectionObserverCallback | null = null
+  const ioObserve = vi.fn()
+  const ioDisconnect = vi.fn()
+
+  // Class-based mock so `new IntersectionObserver(callback)` works
+  class BehaviouralIO implements IntersectionObserver {
+    readonly root = null
+    readonly rootMargin = ''
+    readonly thresholds = [0]
+    readonly observe = ioObserve
+    readonly unobserve = vi.fn()
+    readonly disconnect = ioDisconnect
+    readonly takeRecords = vi.fn(() => [] as IntersectionObserverEntry[])
+
+    constructor(callback: IntersectionObserverCallback) {
+      capturedIOCallback = callback
+    }
+  }
+
+  // Helper: render hook with a real DOM element attached
+  const renderWithElement = (options: Parameters<typeof useScrollAnimation>[0] = {}) => {
+    const element = document.createElement('div')
+    document.body.append(element)
+
+    const {result, rerender, unmount} = renderHook(
+      (opts: Parameters<typeof useScrollAnimation>[0]) => useScrollAnimation(opts),
+      {initialProps: {threshold: 0.1, ...options}},
+    )
+
+    ;(result.current.ref as {current: HTMLElement}).current = element
+    // Rerender with slightly changed threshold to force the IO effect to re-run
+    rerender({threshold: 0.15, ...options})
+
+    return {result, rerender, unmount, element}
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+    capturedIOCallback = null
+    vi.mocked(prefersReducedMotion).mockReturnValue(false)
+    vi.stubGlobal('IntersectionObserver', BehaviouralIO)
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      cb(0)
+      return 1
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver)
+  })
+
+  it('should observe the attached element', () => {
+    const {element} = renderWithElement()
+    expect(ioObserve).toHaveBeenCalledWith(element)
+    element.remove()
+  })
+
+  it('should set isInView and transition to visible when element enters viewport', () => {
+    const {result, element} = renderWithElement()
+
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: true, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+
+    expect(result.current.isInView).toBe(true)
+    expect(result.current.animationState).toBe('visible')
+    element.remove()
+  })
+
+  it('should set isInView false when element leaves viewport', () => {
+    const {result, element} = renderWithElement({triggerOnce: false})
+
+    // Enter
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: true, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+
+    // Leave
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: false, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+
+    expect(result.current.isInView).toBe(false)
+    element.remove()
+  })
+
+  it('should play exit animation when triggerOnce is false and element leaves', () => {
+    const {result, element} = renderWithElement({triggerOnce: false})
+
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: true, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+    expect(result.current.animationState).toBe('visible')
+
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: false, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+    expect(result.current.animationState).toBe('exiting')
+
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+    expect(result.current.animationState).toBe('idle')
+    element.remove()
+  })
+
+  it('should NOT trigger exit animation when triggerOnce is true', () => {
+    const {result, element} = renderWithElement({triggerOnce: true})
+
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: true, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+    expect(result.current.animationState).toBe('visible')
+
+    act(() => {
+      capturedIOCallback?.(
+        [{isIntersecting: false, target: element} as unknown as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      )
+    })
+    // Should remain visible — not exit when triggerOnce is true
+    expect(result.current.animationState).toBe('visible')
+    element.remove()
+  })
+
+  it('should disconnect IO on unmount', () => {
+    const {unmount, element} = renderWithElement()
+    unmount()
+    expect(ioDisconnect).toHaveBeenCalled()
+    element.remove()
+  })
+
+  it('should immediately trigger animation when IntersectionObserver is not supported', () => {
+    // Remove IO to simulate unsupported browser
+    Reflect.deleteProperty(window, 'IntersectionObserver')
+
+    const element = document.createElement('div')
+    document.body.append(element)
+
+    const {result, rerender} = renderHook(
+      (opts: Parameters<typeof useScrollAnimation>[0]) => useScrollAnimation(opts),
+      {initialProps: {threshold: 0.1}},
+    )
+    ;(result.current.ref as {current: HTMLElement}).current = element
+    rerender({threshold: 0.15})
+
+    act(() => {
+      vi.advanceTimersByTime(10)
+    })
+
+    expect(result.current.animationState).toBe('visible')
+    element.remove()
+    // Restore
+    vi.stubGlobal('IntersectionObserver', BehaviouralIO)
+  })
+})

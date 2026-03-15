@@ -1,13 +1,17 @@
 import type {Theme} from '../../src/types'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {
+  clearSavedThemes,
   clearThemeStorage,
   getThemeStorageInfo,
   loadCustomTheme,
+  loadSavedThemes,
   loadThemeMode,
   removeCustomTheme,
+  removeThemeFromLibrary,
   saveCustomTheme,
   saveThemeMode,
+  saveThemeToLibrary,
 } from '../../src/utils/theme-storage'
 
 // Mock localStorage for testing
@@ -350,6 +354,125 @@ describe('theme-storage', () => {
         expect(info.hasCustomTheme).toBe(false)
         expect(info.totalSize).toBe(0)
       })
+    })
+  })
+})
+
+describe('Saved-themes library', () => {
+  const localStorageMock = (() => {
+    let store: Record<string, string> = {}
+    return {
+      getItem: vi.fn((key: string) => store[key] ?? null),
+      setItem: vi.fn((key: string, value: string) => {
+        store[key] = value
+      }),
+      removeItem: vi.fn((key: string) => {
+        delete store[key]
+      }),
+      clear: vi.fn(() => {
+        store = {}
+      }),
+      get store() {
+        return store
+      },
+    }
+  })()
+
+  const validTheme: Theme = {
+    id: 'lib-theme',
+    name: 'Library Theme',
+    mode: 'dark',
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#94a3b8',
+      accent: '#0ea5e9',
+      background: '#0f172a',
+      surface: '#1e293b',
+      text: '#f1f5f9',
+      textSecondary: '#94a3b8',
+      border: '#334155',
+      error: '#ef4444',
+      warning: '#f59e0b',
+      success: '#22c55e',
+    },
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorageMock.clear()
+    vi.stubGlobal('localStorage', localStorageMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  describe('loadSavedThemes', () => {
+    it('should return empty array when nothing is stored', () => {
+      expect(loadSavedThemes()).toEqual([])
+    })
+
+    it('should return stored themes array', () => {
+      localStorageMock.setItem('mrbro-dev-saved-themes', JSON.stringify([validTheme]))
+      expect(loadSavedThemes()).toHaveLength(1)
+    })
+  })
+
+  describe('saveThemeToLibrary', () => {
+    it('should add a new theme to the library', () => {
+      const result = saveThemeToLibrary(validTheme)
+      expect(result).toBe(true)
+      expect(loadSavedThemes()).toHaveLength(1)
+    })
+
+    it('should update an existing theme in the library', () => {
+      saveThemeToLibrary(validTheme)
+      const updated = {...validTheme, name: 'Updated Name'}
+      const result = saveThemeToLibrary(updated)
+      expect(result).toBe(true)
+      const themes = loadSavedThemes()
+      expect(themes).toHaveLength(1)
+      expect(themes[0]?.name).toBe('Updated Name')
+    })
+
+    it('should return false for invalid theme', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const result = saveThemeToLibrary({} as Theme)
+      expect(result).toBe(false)
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('removeThemeFromLibrary', () => {
+    it('should remove an existing theme', () => {
+      saveThemeToLibrary(validTheme)
+      const result = removeThemeFromLibrary(validTheme.id)
+      expect(result).toBe(true)
+      expect(loadSavedThemes()).toHaveLength(0)
+    })
+
+    it('should return false when theme is not found', () => {
+      const result = removeThemeFromLibrary('nonexistent-id')
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('clearSavedThemes', () => {
+    it('should clear all saved themes', () => {
+      saveThemeToLibrary(validTheme)
+      const result = clearSavedThemes()
+      expect(result).toBe(true)
+      expect(loadSavedThemes()).toHaveLength(0)
+    })
+
+    it('should return false on localStorage error', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      localStorageMock.removeItem.mockImplementationOnce(() => {
+        throw new Error('storage error')
+      })
+      const result = clearSavedThemes()
+      expect(result).toBe(false)
+      consoleSpy.mockRestore()
     })
   })
 })
