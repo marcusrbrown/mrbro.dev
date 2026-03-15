@@ -192,8 +192,10 @@ describe('schema-validation utilities', () => {
       const result = sanitizeThemeData(dataWithExtra)
 
       expect(result).toBeDefined()
-      expect((result as Record<string, unknown>)?.extraProperty).toBeUndefined()
-      expect((result as {theme?: {colors?: Record<string, unknown>}})?.theme?.colors?.extraColor).toBeUndefined()
+      expect((result as unknown as Record<string, unknown>)?.extraProperty).toBeUndefined()
+      expect(
+        (result as unknown as {theme?: {colors?: Record<string, unknown>}})?.theme?.colors?.extraColor,
+      ).toBeUndefined()
     })
 
     it('should handle null or undefined input', () => {

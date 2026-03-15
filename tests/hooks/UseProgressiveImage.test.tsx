@@ -107,17 +107,17 @@ describe('useProgressiveImage — IntersectionObserver and image loading', () =>
     readonly root = null
     readonly rootMargin = ''
     readonly thresholds = [0]
-    readonly observe: ReturnType<typeof vi.fn>
-    readonly unobserve: ReturnType<typeof vi.fn>
-    readonly disconnect: ReturnType<typeof vi.fn>
+    readonly observe: (target: Element) => void
+    readonly unobserve: (target: Element) => void
+    readonly disconnect: () => void
     readonly takeRecords = vi.fn(() => [] as IntersectionObserverEntry[])
 
     constructor(callback: IntersectionObserverCallback) {
       capturedIOCallback = callback
       capturedDisconnect = vi.fn()
-      this.observe = vi.fn()
-      this.unobserve = vi.fn()
-      this.disconnect = capturedDisconnect
+      this.observe = vi.fn() as unknown as (target: Element) => void
+      this.unobserve = vi.fn() as unknown as (target: Element) => void
+      this.disconnect = capturedDisconnect as unknown as () => void
     }
   }
 

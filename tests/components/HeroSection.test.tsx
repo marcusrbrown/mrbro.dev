@@ -3,7 +3,7 @@
  */
 
 import {act, fireEvent, render, screen} from '@testing-library/react'
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import HeroSection from '../../src/components/HeroSection'
 
 // Mock UseScrollAnimation so we can control animation state
