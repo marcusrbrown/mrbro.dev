@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {prefersReducedMotion} from '../../src/utils/accessibility'
 import {
+  animateProficiency,
   animationMemory,
   animationPerformance,
   animationScheduler,
@@ -452,5 +453,92 @@ describe('animation-utils', () => {
       expect(fn).toHaveBeenCalledOnce()
       expect(fn).toHaveBeenCalledWith('call3')
     })
+  })
+})
+
+describe('animateProficiency', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.mocked(prefersReducedMotion).mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('should call onProgress with target when reduced motion is preferred', () => {
+    vi.mocked(prefersReducedMotion).mockReturnValue(true)
+    const onProgress = vi.fn()
+    animateProficiency(80, onProgress)
+    vi.advanceTimersByTime(10)
+    expect(onProgress).toHaveBeenCalledWith(80)
+  })
+
+  it('should return a cancel function that stops reduced-motion timeout', () => {
+    vi.mocked(prefersReducedMotion).mockReturnValue(true)
+    const onProgress = vi.fn()
+    const cancel = animateProficiency(80, onProgress, {delay: 200})
+    cancel()
+    vi.advanceTimersByTime(300)
+    expect(onProgress).not.toHaveBeenCalled()
+  })
+
+  it('should animate towards target via requestAnimationFrame', () => {
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      frames.push(cb)
+      return frames.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+
+    const onProgress = vi.fn()
+    animateProficiency(100, onProgress, {duration: 1000})
+
+    // Fire first frame at t=1 to set startTime (avoids falsy 0 check in source)
+    frames[0]?.(1)
+    // Fire a frame at t=1001 — elapsed = 1001-1-0 = 1000 → progress = 1
+    frames.at(-1)?.(1001)
+
+    expect(onProgress).toHaveBeenCalled()
+    const lastValue = onProgress.mock.calls.at(-1)?.[0] as number
+    expect(lastValue).toBe(100)
+
+    vi.unstubAllGlobals()
+  })
+
+  it('should skip frames when elapsed < 0 (delay not expired)', () => {
+    const frames: FrameRequestCallback[] = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      frames.push(cb)
+      return frames.length
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+
+    const onProgress = vi.fn()
+    animateProficiency(100, onProgress, {duration: 500, delay: 300})
+
+    // Fire first frame at t=0, which sets startTime=0; elapsed=0-300=-300 < 0
+    frames[0]?.(0)
+    // onProgress should NOT have been called yet
+    expect(onProgress).not.toHaveBeenCalled()
+    // More frames queued
+    expect(frames.length).toBeGreaterThan(1)
+
+    vi.unstubAllGlobals()
+  })
+
+  it('should cancel animation on cleanup', () => {
+    const cancelMock = vi.fn()
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      setTimeout(() => cb(0), 16)
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', cancelMock)
+
+    const cancel = animateProficiency(80, vi.fn(), {duration: 1000})
+    cancel()
+    expect(cancelMock).toHaveBeenCalled()
+
+    vi.unstubAllGlobals()
   })
 })

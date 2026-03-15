@@ -1,5 +1,5 @@
-import {render, screen} from '@testing-library/react'
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {act, fireEvent, render, screen} from '@testing-library/react'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import TestimonialsCarousel from '../../src/components/TestimonialsCarousel'
 
 // Mock the UseScrollAnimation hook
@@ -157,5 +157,116 @@ describe('TestimonialsCarousel', () => {
 
       expect(container.firstChild).toBeNull()
     })
+  })
+})
+
+describe('TestimonialsCarousel — navigation and interaction', () => {
+  // Keep tests co-located but in a separate describe to avoid conflicts with fake-timer setup
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const mockTestimonials = [
+    {id: '1', name: 'Alice', role: 'Dev', company: 'A Co', content: 'First testimonial'},
+    {id: '2', name: 'Bob', role: 'PM', company: 'B Co', content: 'Second testimonial'},
+    {id: '3', name: 'Carol', role: 'CTO', company: 'C Co', content: 'Third testimonial'},
+  ]
+
+  it('should navigate to next testimonial on next button click', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+
+    expect(screen.getByText(/First testimonial/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', {name: 'Next testimonial'}))
+
+    expect(screen.getByText(/Second testimonial/)).toBeInTheDocument()
+  })
+
+  it('should navigate to previous testimonial on prev button click', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+
+    // Go to index 2 first
+    fireEvent.click(screen.getByRole('button', {name: 'Next testimonial'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Next testimonial'}))
+    expect(screen.getByText(/Third testimonial/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', {name: 'Previous testimonial'}))
+    expect(screen.getByText(/Second testimonial/)).toBeInTheDocument()
+  })
+
+  it('should wrap around to last testimonial when clicking prev from first', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+    fireEvent.click(screen.getByRole('button', {name: 'Previous testimonial'}))
+    expect(screen.getByText(/Third testimonial/)).toBeInTheDocument()
+  })
+
+  it('should wrap around to first testimonial when clicking next from last', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+    // Advance to last
+    fireEvent.click(screen.getByRole('button', {name: 'Next testimonial'}))
+    fireEvent.click(screen.getByRole('button', {name: 'Next testimonial'}))
+    // Wrap around
+    fireEvent.click(screen.getByRole('button', {name: 'Next testimonial'}))
+    expect(screen.getByText(/First testimonial/)).toBeInTheDocument()
+  })
+
+  it('should go to specific testimonial on indicator click', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+    fireEvent.click(screen.getByRole('button', {name: 'Go to testimonial 3'}))
+    expect(screen.getByText(/Third testimonial/)).toBeInTheDocument()
+  })
+
+  it('should toggle play/pause', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={true} />)
+    const playbackBtn = screen.getByRole('button', {name: 'Pause testimonials'})
+    fireEvent.click(playbackBtn)
+    expect(screen.getByRole('button', {name: 'Play testimonials'})).toBeInTheDocument()
+  })
+
+  it('should stop autoplay when prev button receives focus', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={true} />)
+    const prevBtn = screen.getByRole('button', {name: 'Previous testimonial'})
+    fireEvent.focus(prevBtn)
+    expect(screen.getByRole('button', {name: 'Play testimonials'})).toBeInTheDocument()
+  })
+
+  it('should stop autoplay when next button receives focus', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={true} />)
+    const nextBtn = screen.getByRole('button', {name: 'Next testimonial'})
+    fireEvent.focus(nextBtn)
+    expect(screen.getByRole('button', {name: 'Play testimonials'})).toBeInTheDocument()
+  })
+
+  it('should advance testimonial automatically when playing and in view', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={true} autoPlayInterval={1000} />)
+    expect(screen.getByText(/First testimonial/)).toBeInTheDocument()
+    act(() => {
+      vi.advanceTimersByTime(1100)
+    })
+    expect(screen.getByText(/Second testimonial/)).toBeInTheDocument()
+  })
+
+  it('should handle ArrowRight keyboard navigation', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+    fireEvent.keyDown(window, {key: 'ArrowRight'})
+    expect(screen.getByText(/Second testimonial/)).toBeInTheDocument()
+  })
+
+  it('should handle ArrowLeft keyboard navigation', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={false} />)
+    fireEvent.keyDown(window, {key: 'ArrowRight'}) // go to 2
+    fireEvent.keyDown(window, {key: 'ArrowLeft'}) // back to 1
+    expect(screen.getByText(/First testimonial/)).toBeInTheDocument()
+  })
+
+  it('should toggle play/pause with spacebar', () => {
+    render(<TestimonialsCarousel testimonials={mockTestimonials} autoPlay={true} />)
+    fireEvent.keyDown(window, {key: ' '})
+    expect(screen.getByRole('button', {name: 'Play testimonials'})).toBeInTheDocument()
   })
 })
