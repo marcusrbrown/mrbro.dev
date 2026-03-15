@@ -376,8 +376,10 @@ describe('ThemeContext — reduced-motion and cross-tab sync', () => {
 
   it('should sync theme mode from cross-tab storage event', () => {
     const {result} = renderHook(() => useTheme(), {wrapper})
+    const initialMode = result.current.themeMode
 
     act(() => {
+      localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify('dark'))
       window.dispatchEvent(
         new StorageEvent('storage', {
           key: 'mrbro-dev-theme-mode',
@@ -386,13 +388,13 @@ describe('ThemeContext — reduced-motion and cross-tab sync', () => {
       )
     })
 
-    // loadThemeMode reads from localStorage which returns default (light/'system')
-    // The key point is no error is thrown
-    expect(result.current).toBeDefined()
+    expect(result.current.themeMode).toBe('dark')
+    expect(result.current.themeMode).not.toBe(initialMode)
   })
 
   it('should handle cross-tab storage event for custom theme key', () => {
     const {result} = renderHook(() => useTheme(), {wrapper})
+    const initialMode = result.current.themeMode
 
     act(() => {
       window.dispatchEvent(
@@ -403,26 +405,29 @@ describe('ThemeContext — reduced-motion and cross-tab sync', () => {
       )
     })
 
-    expect(result.current).toBeDefined()
+    expect(result.current.themeMode).toBe(initialMode)
+    expect(result.current.isCustomTheme).toBe(false)
   })
 
   it('should ignore storage events for unrelated keys', () => {
     const {result} = renderHook(() => useTheme(), {wrapper})
+    const initialMode = result.current.themeMode
 
     act(() => {
       window.dispatchEvent(new StorageEvent('storage', {key: 'unrelated-key', newValue: 'value'}))
     })
 
-    expect(result.current).toBeDefined()
+    expect(result.current.themeMode).toBe(initialMode)
   })
 
   it('should ignore storage events with no key', () => {
     const {result} = renderHook(() => useTheme(), {wrapper})
+    const initialMode = result.current.themeMode
 
     act(() => {
       window.dispatchEvent(new StorageEvent('storage', {key: null}))
     })
 
-    expect(result.current).toBeDefined()
+    expect(result.current.themeMode).toBe(initialMode)
   })
 })

@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import {act, renderHook} from '@testing-library/react'
+import {renderHook, waitFor} from '@testing-library/react'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {useGitHub} from '../../src/hooks/UseGitHub'
 
@@ -97,12 +97,8 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(result.current.loading).toBe(false)
     expect(result.current.error).toBeNull()
     expect(result.current.repos).toHaveLength(mockRepos.length)
   })
@@ -118,12 +114,8 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
-    // Only non-fork, non-archived repos with descriptions should appear in projects
     expect(result.current.projects.every(p => !p.title.includes('fork') && !p.title.includes('arch'))).toBe(true)
     expect(result.current.projects).toHaveLength(1)
   })
@@ -139,10 +131,7 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
     const project = result.current.projects[0]
     expect(project).toBeDefined()
@@ -162,10 +151,7 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.blogPosts).toHaveLength(1)
     expect(result.current.blogPosts[0]?.title).toBe('A useful gist')
@@ -183,10 +169,7 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.blogPosts[0]?.title).toBe('Untitled')
   })
@@ -196,12 +179,8 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
-    expect(result.current.loading).toBe(false)
     expect(result.current.error).toBe('Failed to fetch data from GitHub')
   })
 
@@ -214,9 +193,7 @@ describe('useGitHub', () => {
 
     renderHook(() => useGitHub('testuser'))
 
-    await act(async () => {
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
 
     expect(fetchMock.mock.calls[0]?.[0]).toContain('testuser')
   })
@@ -233,10 +210,7 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.projects[0]?.topics).toEqual([])
   })
@@ -253,10 +227,7 @@ describe('useGitHub', () => {
 
     const {result} = renderHook(() => useGitHub())
 
-    await act(async () => {
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+    await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.projects[0]?.language).toBe('Unknown')
   })

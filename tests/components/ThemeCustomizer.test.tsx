@@ -2,8 +2,9 @@
  * @vitest-environment happy-dom
  */
 
-import {fireEvent, render, screen, waitFor} from '@testing-library/react'
-import {describe, expect, it, vi} from 'vitest'
+import type {Theme} from '../../src/types'
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {ThemeCustomizer} from '../../src/components/ThemeCustomizer'
 import {ThemeProvider} from '../../src/contexts/ThemeContext'
 
@@ -11,6 +12,58 @@ import {ThemeProvider} from '../../src/contexts/ThemeContext'
 const MockedThemeProvider = ({children}: {children: React.ReactNode}) => <ThemeProvider>{children}</ThemeProvider>
 
 describe('ThemeCustomizer', () => {
+  const savedThemeFixture: Theme = {
+    id: 'saved-theme-1',
+    name: 'Saved Test Theme',
+    mode: 'dark',
+    isBuiltIn: false,
+    colors: {
+      primary: '#6366f1',
+      secondary: '#8b5cf6',
+      accent: '#ec4899',
+      background: '#0f172a',
+      surface: '#1e293b',
+      text: '#f8fafc',
+      textSecondary: '#cbd5e1',
+      border: '#334155',
+      error: '#ef4444',
+      warning: '#f59e0b',
+      success: '#10b981',
+    },
+  }
+
+  const importedThemeFixture: Theme = {
+    ...savedThemeFixture,
+    id: 'imported-theme-1',
+    name: 'Imported Theme',
+    mode: 'light',
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  const renderCustomizer = (props?: React.ComponentProps<typeof ThemeCustomizer>) =>
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer {...props} />
+      </MockedThemeProvider>,
+    )
+
+  const openLibraryTab = () => {
+    fireEvent.click(screen.getByRole('tab', {name: /Library/}))
+  }
+
+  const openPresetsTab = () => {
+    fireEvent.click(screen.getByRole('tab', {name: 'Presets'}))
+  }
+
   it('renders with basic structure', () => {
     render(
       <MockedThemeProvider>
@@ -90,12 +143,10 @@ describe('ThemeCustomizer', () => {
     const hslButtons = screen.getAllByText('HSL')
     expect(hslButtons.length).toBeGreaterThan(0)
 
-    // Test expanding HSL controls
-    const firstHslButton = hslButtons[0]
-    if (firstHslButton) {
-      fireEvent.click(firstHslButton)
-      expect(firstHslButton).toHaveAttribute('aria-expanded', 'true')
-    }
+    const firstHslButton = hslButtons[0] as HTMLElement
+    expect(firstHslButton).toBeTruthy()
+    fireEvent.click(firstHslButton)
+    expect(firstHslButton).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('allows color value editing', () => {
@@ -173,15 +224,13 @@ describe('ThemeCustomizer', () => {
       </MockedThemeProvider>,
     )
 
-    const hslButton = screen.getAllByText('HSL')[0]
-    if (hslButton) {
-      fireEvent.click(hslButton)
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    expect(hslButton).toBeTruthy()
+    fireEvent.click(hslButton)
 
-      // Check for HSL sliders
-      expect(screen.getByText(/Hue:/)).toBeInTheDocument()
-      expect(screen.getByText(/Saturation:/)).toBeInTheDocument()
-      expect(screen.getByText(/Lightness:/)).toBeInTheDocument()
-    }
+    expect(screen.getByText(/Hue:/)).toBeInTheDocument()
+    expect(screen.getByText(/Saturation:/)).toBeInTheDocument()
+    expect(screen.getByText(/Lightness:/)).toBeInTheDocument()
   })
 
   it('updates HSL values with sliders', () => {
@@ -191,15 +240,14 @@ describe('ThemeCustomizer', () => {
       </MockedThemeProvider>,
     )
 
-    const hslButton = screen.getAllByText('HSL')[0]
-    if (hslButton) {
-      fireEvent.click(hslButton)
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    expect(hslButton).toBeTruthy()
+    fireEvent.click(hslButton)
 
-      const hueSlider = screen.getByLabelText('Hue value')
-      fireEvent.change(hueSlider, {target: {value: '180'}})
+    const hueSlider = screen.getByLabelText('Hue value')
+    fireEvent.change(hueSlider, {target: {value: '180'}})
 
-      expect(hueSlider).toHaveValue('180')
-    }
+    expect(hueSlider).toHaveValue('180')
   })
 
   it('applies custom class name', () => {
@@ -297,20 +345,18 @@ describe('ThemeCustomizer', () => {
     validateSpy.mockRestore()
   })
 
-  it('should show success notification on save to library', async () => {
-    render(
+  it('should show notification on save to library', () => {
+    const {container} = render(
       <MockedThemeProvider>
         <ThemeCustomizer />
       </MockedThemeProvider>,
     )
 
-    const saveBtn = screen.queryByRole('button', {name: /Save to Library/i})
-    if (saveBtn) {
-      fireEvent.click(saveBtn)
-      await waitFor(() => {
-        expect(screen.queryByRole('alert')).toBeInTheDocument()
-      })
-    }
+    fireEvent.click(screen.getByRole('button', {name: /Save theme to library/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification).toBeTruthy()
+    expect(notification?.textContent).toMatch(/saved successfully|validation failed|Failed to save/i)
   })
 
   it('should handle keyboard Escape to close', () => {
@@ -357,27 +403,24 @@ describe('ThemeCustomizer', () => {
     )
 
     fireEvent.click(screen.getByRole('tab', {name: 'Presets'}))
-    // Preset cards have role="button" with aria-label="Apply [Name] theme"
     const applyButtons = screen.getAllByRole('button', {name: /Apply .* theme/i})
     expect(applyButtons.length).toBeGreaterThan(0)
-    const firstButton = applyButtons[0]
-    if (firstButton) fireEvent.click(firstButton)
-    // After loading a preset, customizer stays open but editing theme is updated
+    const firstButton = applyButtons[0] as HTMLElement
+    expect(firstButton).toBeTruthy()
+    fireEvent.click(firstButton)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
-  it('should handle import button trigger', () => {
+  it('should handle import button in Library tab', () => {
     render(
       <MockedThemeProvider>
         <ThemeCustomizer />
       </MockedThemeProvider>,
     )
 
-    // Switch to export/import tab or find the import button
-    const importBtn = screen.queryByRole('button', {name: /Import Theme/i})
-    if (importBtn) {
-      expect(importBtn).toBeInTheDocument()
-    }
+    fireEvent.click(screen.getByRole('tab', {name: /Library/}))
+    const importBtn = screen.getByRole('button', {name: /Import Theme/i})
+    expect(importBtn).toBeInTheDocument()
   })
 
   it('should handle export theme button click', () => {
@@ -387,9 +430,590 @@ describe('ThemeCustomizer', () => {
       </MockedThemeProvider>,
     )
 
-    const exportBtn = screen.queryByRole('button', {name: /Export Theme/i})
-    if (exportBtn) {
-      expect(() => fireEvent.click(exportBtn)).not.toThrow()
-    }
+    const exportBtn = screen.getByRole('button', {name: /Export/})
+    expect(exportBtn).toBeInTheDocument()
+    expect(() => fireEvent.click(exportBtn)).not.toThrow()
+  })
+
+  it('shows save error notification when validateTheme is false', async () => {
+    const themeValidation = await import('../../src/utils/theme-validation')
+    vi.spyOn(themeValidation, 'validateTheme').mockReturnValueOnce(false)
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Save theme to library/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification).toBeTruthy()
+    expect(notification?.textContent).toContain('Theme validation failed')
+  })
+
+  it('shows save error when saveThemeToLibrary returns false', async () => {
+    const themeValidation = await import('../../src/utils/theme-validation')
+    const themeStorage = await import('../../src/utils/theme-storage')
+    vi.spyOn(themeValidation, 'validateTheme').mockReturnValueOnce(true)
+    vi.spyOn(themeStorage, 'saveThemeToLibrary').mockReturnValueOnce(false)
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Save theme to library/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification).toBeTruthy()
+    expect(notification?.textContent).toContain('Failed to save theme')
+  })
+
+  it('exports theme successfully and shows success notification', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    const exportSpy = vi.spyOn(themeExport, 'exportTheme').mockImplementation(() => {})
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Export theme as JSON file/i}))
+
+    expect(exportSpy).toHaveBeenCalledOnce()
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification).toBeTruthy()
+    expect(notification?.textContent).toContain('Theme exported successfully!')
+  })
+
+  it('shows export error notification when exportTheme throws', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    vi.spyOn(themeExport, 'exportTheme').mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Export theme as JSON file/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification).toBeTruthy()
+    expect(notification?.textContent).toContain('Failed to export theme')
+  })
+
+  it('copies theme successfully and shows success notification', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: {writeText: vi.fn(), readText: vi.fn()},
+      configurable: true,
+    })
+
+    const themeExport = await import('../../src/utils/theme-export')
+    const copySpy = vi.spyOn(themeExport, 'copyThemeToClipboard').mockResolvedValueOnce()
+    const {container} = renderCustomizer()
+
+    fireEvent.click(screen.getByRole('button', {name: /Copy theme JSON to clipboard/i}))
+
+    await waitFor(() => {
+      expect(copySpy).toHaveBeenCalledOnce()
+      const notification = container.querySelector('.theme-customizer__notification')
+      expect(notification?.textContent).toContain('Theme copied to clipboard!')
+    })
+  })
+
+  it('shows copy error notification when copyThemeToClipboard rejects', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    vi.spyOn(themeExport, 'copyThemeToClipboard').mockRejectedValueOnce(new Error('clipboard failed'))
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Copy theme JSON to clipboard/i}))
+
+    await waitFor(() => {
+      const notification = container.querySelector('.theme-customizer__notification')
+      expect(notification?.textContent).toContain('Failed to copy theme to clipboard')
+    })
+  })
+
+  it('returns early for import when no file is selected', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    const validateFileSpy = vi.spyOn(themeExport, 'validateThemeFile')
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement
+    expect(fileInput).toBeTruthy()
+
+    fireEvent.change(fileInput, {target: {files: []}})
+    expect(validateFileSpy).not.toHaveBeenCalled()
+  })
+
+  it('shows import validation error when validateThemeFile returns errors', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    vi.spyOn(themeExport, 'validateThemeFile').mockReturnValueOnce(['bad extension'])
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['{}'], 'broken.txt', {type: 'text/plain'})
+
+    fireEvent.change(fileInput, {target: {files: [file]}})
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification).toBeTruthy()
+    expect(notification?.textContent).toContain('Invalid file: bad extension')
+  })
+
+  it('imports theme successfully and updates editor fields', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    vi.spyOn(themeExport, 'validateThemeFile').mockReturnValueOnce([])
+    vi.spyOn(themeExport, 'importTheme').mockResolvedValueOnce(importedThemeFixture)
+
+    const onThemeChange = vi.fn()
+    const {container} = renderCustomizer({onThemeChange})
+    openLibraryTab()
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['{}'], 'theme.json', {type: 'application/json'})
+
+    fireEvent.change(fileInput, {target: {files: [file]}})
+
+    await waitFor(() => {
+      expect(onThemeChange).toHaveBeenCalledWith(expect.objectContaining({name: 'Imported Theme'}))
+      const notification = container.querySelector('.theme-customizer__notification')
+      expect(notification?.textContent).toContain('imported successfully')
+    })
+
+    fireEvent.click(screen.getByRole('button', {name: /Return to theme editor/i}))
+    expect(screen.getByDisplayValue('Imported Theme')).toBeInTheDocument()
+    expect(screen.getByLabelText('Light')).toBeChecked()
+  })
+
+  it('shows import error notification when importTheme rejects', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    vi.spyOn(themeExport, 'validateThemeFile').mockReturnValueOnce([])
+    vi.spyOn(themeExport, 'importTheme').mockRejectedValueOnce(new Error('invalid json'))
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['{}'], 'theme.json', {type: 'application/json'})
+
+    fireEvent.change(fileInput, {target: {files: [file]}})
+
+    await waitFor(() => {
+      const notification = container.querySelector('.theme-customizer__notification')
+      expect(notification?.textContent).toContain('Import failed: invalid json')
+    })
+  })
+
+  it('resets file input after successful import', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    vi.spyOn(themeExport, 'validateThemeFile').mockReturnValueOnce([])
+    vi.spyOn(themeExport, 'importTheme').mockResolvedValueOnce(importedThemeFixture)
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['{}'], 'theme.json', {type: 'application/json'})
+
+    fireEvent.change(fileInput, {target: {files: [file]}})
+
+    await waitFor(() => {
+      expect(fileInput?.value).toBe('')
+    })
+  })
+
+  it('loads saved theme and shows success notification', () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+
+    fireEvent.click(screen.getByRole('button', {name: /Load Saved Test Theme theme/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification?.textContent).toContain('loaded!')
+
+    fireEvent.click(screen.getByRole('button', {name: /Return to theme editor/i}))
+    expect(screen.getByDisplayValue('Saved Test Theme')).toBeInTheDocument()
+  })
+
+  it('deletes saved theme successfully and shows success notification', async () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    const themeStorage = await import('../../src/utils/theme-storage')
+    vi.spyOn(themeStorage, 'removeThemeFromLibrary').mockReturnValueOnce(true)
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+    fireEvent.click(screen.getByRole('button', {name: /Delete Saved Test Theme theme from library/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification?.textContent).toContain('Theme deleted successfully!')
+  })
+
+  it('shows delete error notification when deleting saved theme fails', async () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    const themeStorage = await import('../../src/utils/theme-storage')
+    vi.spyOn(themeStorage, 'removeThemeFromLibrary').mockReturnValueOnce(false)
+
+    const {container} = renderCustomizer()
+    openLibraryTab()
+    fireEvent.click(screen.getByRole('button', {name: /Delete Saved Test Theme theme from library/i}))
+
+    const notification = container.querySelector('.theme-customizer__notification')
+    expect(notification?.textContent).toContain('Failed to delete theme')
+  })
+
+  it('renders saved theme cards in library when themes exist', () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    renderCustomizer()
+    openLibraryTab()
+
+    expect(screen.getByText('Saved Test Theme')).toBeInTheDocument()
+    expect(screen.getByText('dark')).toBeInTheDocument()
+  })
+
+  it('renders empty state in library when no themes exist', () => {
+    renderCustomizer()
+    openLibraryTab()
+
+    expect(screen.getByText('No saved themes yet.')).toBeInTheDocument()
+  })
+
+  it('cycles tabs with ArrowRight and ArrowLeft with wrap behavior', () => {
+    renderCustomizer()
+
+    const libraryTab = screen.getByRole('tab', {name: /Library/})
+    fireEvent.click(libraryTab)
+    fireEvent.keyDown(libraryTab, {key: 'ArrowRight'})
+
+    expect(screen.getByRole('tab', {name: 'Editor'})).toHaveAttribute('aria-selected', 'true')
+    const editorTab = screen.getByRole('tab', {name: 'Editor'})
+    fireEvent.keyDown(editorTab, {key: 'ArrowLeft'})
+
+    expect(screen.getByRole('tab', {name: /Library/})).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('handles Ctrl+S keyboard shortcut to save theme', async () => {
+    const themeStorage = await import('../../src/utils/theme-storage')
+    const saveSpy = vi.spyOn(themeStorage, 'saveThemeToLibrary').mockReturnValueOnce(true)
+
+    renderCustomizer()
+    fireEvent.keyDown(screen.getByRole('dialog'), {key: 's', ctrlKey: true})
+
+    expect(saveSpy).toHaveBeenCalledOnce()
+  })
+
+  it('handles Ctrl+E keyboard shortcut to export theme', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    const exportSpy = vi.spyOn(themeExport, 'exportTheme').mockImplementation(() => {})
+
+    renderCustomizer()
+    fireEvent.keyDown(screen.getByRole('dialog'), {key: 'e', ctrlKey: true})
+
+    expect(exportSpy).toHaveBeenCalledOnce()
+  })
+
+  it('handles Ctrl+Enter keyboard shortcut to apply theme', async () => {
+    const onClose = vi.fn()
+    const themeValidation = await import('../../src/utils/theme-validation')
+    vi.spyOn(themeValidation, 'validateTheme').mockReturnValueOnce(true)
+
+    renderCustomizer({onClose})
+    fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Enter', ctrlKey: true})
+
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('switches tabs using Enter key on tab buttons', () => {
+    renderCustomizer()
+    const presetsTab = screen.getByRole('tab', {name: 'Presets'})
+
+    fireEvent.keyDown(presetsTab, {key: 'Enter'})
+    expect(presetsTab).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('switches tabs using Space key on tab buttons', () => {
+    renderCustomizer()
+    const libraryTab = screen.getByRole('tab', {name: /Library/})
+
+    fireEvent.keyDown(libraryTab, {key: ' '})
+    expect(libraryTab).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('triggers footer action with Enter key via handleButtonKeyDown', async () => {
+    const themeStorage = await import('../../src/utils/theme-storage')
+    const saveSpy = vi.spyOn(themeStorage, 'saveThemeToLibrary').mockReturnValueOnce(true)
+    renderCustomizer()
+
+    fireEvent.keyDown(screen.getByRole('button', {name: /Save theme to library/i}), {key: 'Enter'})
+    expect(saveSpy).toHaveBeenCalledOnce()
+  })
+
+  it('triggers footer action with Space key via handleButtonKeyDown', async () => {
+    const themeExport = await import('../../src/utils/theme-export')
+    const exportSpy = vi.spyOn(themeExport, 'exportTheme').mockImplementation(() => {})
+    renderCustomizer()
+
+    fireEvent.keyDown(screen.getByRole('button', {name: /Export theme as JSON file/i}), {key: ' '})
+    expect(exportSpy).toHaveBeenCalledOnce()
+  })
+
+  it('SavedThemeCard load button works on Enter key', () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    renderCustomizer()
+    openLibraryTab()
+
+    const loadButton = screen.getByRole('button', {name: /Load Saved Test Theme theme/i})
+    fireEvent.keyDown(loadButton, {key: 'Enter'})
+
+    fireEvent.click(screen.getByRole('button', {name: /Return to theme editor/i}))
+    expect(screen.getByDisplayValue('Saved Test Theme')).toBeInTheDocument()
+  })
+
+  it('SavedThemeCard load button works on Space key', () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    renderCustomizer()
+    openLibraryTab()
+
+    const loadButton = screen.getByRole('button', {name: /Load Saved Test Theme theme/i})
+    fireEvent.keyDown(loadButton, {key: ' '})
+
+    fireEvent.click(screen.getByRole('button', {name: /Return to theme editor/i}))
+    expect(screen.getByDisplayValue('Saved Test Theme')).toBeInTheDocument()
+  })
+
+  it('SavedThemeCard export button works on click', async () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    const themeExport = await import('../../src/utils/theme-export')
+    const exportSpy = vi.spyOn(themeExport, 'exportTheme').mockImplementation(() => {})
+
+    renderCustomizer()
+    openLibraryTab()
+    fireEvent.click(screen.getByRole('button', {name: /Export Saved Test Theme theme as JSON/i}))
+
+    expect(exportSpy).toHaveBeenCalledWith(expect.objectContaining({id: 'saved-theme-1'}))
+  })
+
+  it('SavedThemeCard export button works on keyboard Enter', async () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    const themeExport = await import('../../src/utils/theme-export')
+    const exportSpy = vi.spyOn(themeExport, 'exportTheme').mockImplementation(() => {})
+
+    renderCustomizer()
+    openLibraryTab()
+    fireEvent.keyDown(screen.getByRole('button', {name: /Export Saved Test Theme theme as JSON/i}), {key: 'Enter'})
+
+    expect(exportSpy).toHaveBeenCalledWith(expect.objectContaining({id: 'saved-theme-1'}))
+  })
+
+  it('SavedThemeCard delete button works on keyboard Space', async () => {
+    localStorage.setItem('mrbro-dev-saved-themes', JSON.stringify([savedThemeFixture]))
+    const themeStorage = await import('../../src/utils/theme-storage')
+    const deleteSpy = vi.spyOn(themeStorage, 'removeThemeFromLibrary').mockReturnValueOnce(true)
+
+    renderCustomizer()
+    openLibraryTab()
+    fireEvent.keyDown(screen.getByRole('button', {name: /Delete Saved Test Theme theme from library/i}), {key: ' '})
+
+    expect(deleteSpy).toHaveBeenCalledWith('saved-theme-1')
+  })
+
+  it('shows accessibility success message when theme is accessible', () => {
+    renderCustomizer()
+    expect(screen.getByText(/All color combinations meet WCAG 2.1 AA accessibility standards/i)).toBeInTheDocument()
+  })
+
+  it('shows accessibility issues list when theme has contrast issues', async () => {
+    const themeValidation = await import('../../src/utils/theme-validation')
+    vi.spyOn(themeValidation, 'validateThemeAccessibility').mockReturnValueOnce({
+      isAccessible: false,
+      issues: [
+        {
+          pair: ['text', 'background'],
+          contrast: {ratio: 2.1, meetsAA: false, meetsAAA: false, grade: 'Fail'},
+        },
+      ],
+    })
+
+    renderCustomizer()
+    expect(screen.getByText('Color contrast issues found:')).toBeInTheDocument()
+    expect(screen.getByText('(needs 4.5:1 for WCAG AA)')).toBeInTheDocument()
+  })
+
+  it('auto-dismisses notification after timeout', async () => {
+    vi.useFakeTimers()
+    const themeStorage = await import('../../src/utils/theme-storage')
+    vi.spyOn(themeStorage, 'saveThemeToLibrary').mockReturnValueOnce(true)
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Save theme to library/i}))
+
+    expect(container.querySelector('.theme-customizer__notification')).toBeTruthy()
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+
+    expect(container.querySelector('.theme-customizer__notification')).toBeNull()
+  })
+
+  it('renders error notification type class', async () => {
+    const themeValidation = await import('../../src/utils/theme-validation')
+    vi.spyOn(themeValidation, 'validateTheme').mockReturnValueOnce(false)
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Save theme to library/i}))
+
+    expect(container.querySelector('.theme-customizer__notification--error')).toBeTruthy()
+  })
+
+  it('renders success notification type class', async () => {
+    const themeStorage = await import('../../src/utils/theme-storage')
+    vi.spyOn(themeStorage, 'saveThemeToLibrary').mockReturnValueOnce(true)
+
+    const {container} = renderCustomizer()
+    fireEvent.click(screen.getByRole('button', {name: /Save theme to library/i}))
+
+    expect(container.querySelector('.theme-customizer__notification--success')).toBeTruthy()
+  })
+
+  it('shows presets footer action and switches back to editor', () => {
+    renderCustomizer()
+    openPresetsTab()
+
+    const customizeButton = screen.getByRole('button', {name: /Switch to editor tab to customize selected theme/i})
+    expect(customizeButton).toBeInTheDocument()
+    fireEvent.click(customizeButton)
+    expect(screen.getByRole('button', {name: /Apply theme and close/i})).toBeInTheDocument()
+  })
+
+  it('shows library footer action and switches back to editor', () => {
+    renderCustomizer()
+    openLibraryTab()
+
+    const backButton = screen.getByRole('button', {name: /Return to theme editor/i})
+    expect(backButton).toBeInTheDocument()
+    fireEvent.click(backButton)
+    expect(screen.getByRole('button', {name: /Apply theme and close/i})).toBeInTheDocument()
+  })
+
+  it('applies HSL slider min and max bounds attributes', () => {
+    renderCustomizer()
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    fireEvent.click(hslButton)
+
+    const hueSlider = screen.getByLabelText('Hue value')
+    const saturationSlider = screen.getByLabelText('Saturation value')
+    const lightnessSlider = screen.getByLabelText('Lightness value')
+
+    expect(hueSlider).toHaveAttribute('min', '0')
+    expect(hueSlider).toHaveAttribute('max', '360')
+    expect(saturationSlider).toHaveAttribute('min', '0')
+    expect(saturationSlider).toHaveAttribute('max', '100')
+    expect(lightnessSlider).toHaveAttribute('min', '0')
+    expect(lightnessSlider).toHaveAttribute('max', '100')
+  })
+
+  it('parseColor handles HSL input and updates HSL slider values', () => {
+    renderCustomizer()
+    const primaryColorInput = screen.getByLabelText('Primary color value')
+    fireEvent.change(primaryColorInput, {target: {value: 'hsl(120, 40%, 60%)'}})
+
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    fireEvent.click(hslButton)
+
+    expect(screen.getByText('Hue: 120°')).toBeInTheDocument()
+    expect(screen.getByText('Saturation: 40%')).toBeInTheDocument()
+    expect(screen.getByText('Lightness: 60%')).toBeInTheDocument()
+  })
+
+  it('parseColor handles RGB input and converts to HSL', () => {
+    renderCustomizer()
+    const primaryColorInput = screen.getByLabelText('Primary color value')
+    fireEvent.change(primaryColorInput, {target: {value: 'rgb(255, 0, 0)'}})
+
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    fireEvent.click(hslButton)
+
+    expect(screen.getByText('Hue: 0°')).toBeInTheDocument()
+    expect(screen.getByText('Saturation: 100%')).toBeInTheDocument()
+    expect(screen.getByText('Lightness: 50%')).toBeInTheDocument()
+  })
+
+  it('parseColor handles hex input using fallback HSL values', () => {
+    renderCustomizer()
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    fireEvent.click(hslButton)
+
+    expect(screen.getByText('Hue: 0°')).toBeInTheDocument()
+    expect(screen.getByText('Saturation: 50%')).toBeInTheDocument()
+    expect(screen.getByText('Lightness: 50%')).toBeInTheDocument()
+  })
+
+  it('parseColor handles unknown format by preserving previous HSL values', () => {
+    renderCustomizer()
+    const primaryColorInput = screen.getByLabelText('Primary color value')
+    fireEvent.change(primaryColorInput, {target: {value: 'hsl(10, 20%, 30%)'}})
+    fireEvent.change(primaryColorInput, {target: {value: 'inherit'}})
+
+    const hslButton = screen.getAllByText('HSL')[0] as HTMLElement
+    fireEvent.click(hslButton)
+
+    expect(screen.getByText('Hue: 10°')).toBeInTheDocument()
+    expect(screen.getByText('Saturation: 20%')).toBeInTheDocument()
+    expect(screen.getByText('Lightness: 30%')).toBeInTheDocument()
+  })
+
+  it('validateColor accepts hex3 format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: '#fff'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts hex6 format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: '#abcdef'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts hex8 format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: '#11223344'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts hsl format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: 'hsl(30, 60%, 50%)'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts hsla format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: 'hsla(30, 60%, 50%, 0.5)'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts rgb format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: 'rgb(10, 20, 30)'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts rgba format', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: 'rgba(10, 20, 30, 0.7)'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor accepts transparent and currentcolor keywords', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+
+    fireEvent.change(input, {target: {value: 'transparent'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+
+    fireEvent.change(input, {target: {value: 'currentcolor'}})
+    expect(input).not.toHaveClass('color-input__text--invalid')
+  })
+
+  it('validateColor rejects random invalid strings', () => {
+    renderCustomizer()
+    const input = screen.getByLabelText('Primary color value')
+    fireEvent.change(input, {target: {value: 'totally-not-a-color'}})
+
+    expect(input).toHaveClass('color-input__text--invalid')
   })
 })

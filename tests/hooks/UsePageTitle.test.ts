@@ -58,4 +58,4 @@ describe('UsePageTitle', () => {
   })
 })
 
-// UseGitHub integration coverage is provided by tests/hooks/UseAnalytics.test.ts and github.test.ts
+// UseGitHub integration coverage is provided by tests/hooks/UseGitHub.test.ts and github.test.ts
