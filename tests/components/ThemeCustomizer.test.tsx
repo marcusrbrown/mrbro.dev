@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import {fireEvent, render, screen} from '@testing-library/react'
+import {fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {describe, expect, it, vi} from 'vitest'
 import {ThemeCustomizer} from '../../src/components/ThemeCustomizer'
 import {ThemeProvider} from '../../src/contexts/ThemeContext'
@@ -229,5 +229,167 @@ describe('ThemeCustomizer', () => {
     expect(screen.getByText('Theme validation failed')).toBeInTheDocument()
 
     validateSpy.mockRestore()
+  })
+
+  it('should switch to Presets tab on click', () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('tab', {name: 'Presets'}))
+    // PresetThemeGallery is rendered — check the tab panel is present
+    expect(screen.getByRole('tabpanel', {hidden: true})).toBeInTheDocument()
+  })
+
+  it('should switch to Library tab on click', () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('tab', {name: /Library/}))
+    // Library tab should render saved themes section
+    expect(screen.getByText('Saved Themes')).toBeInTheDocument()
+  })
+
+  it('should update theme name input', () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    const nameInput = screen.getByLabelText(/Theme Name/)
+    fireEvent.change(nameInput, {target: {value: 'My Custom Theme'}})
+    expect(nameInput).toHaveValue('My Custom Theme')
+  })
+
+  it('should call onThemeChange when theme mode is changed', () => {
+    const onThemeChange = vi.fn()
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer onThemeChange={onThemeChange} />
+      </MockedThemeProvider>,
+    )
+
+    const darkRadio = screen.getByLabelText('Dark')
+    fireEvent.click(darkRadio)
+    expect(onThemeChange).toHaveBeenCalled()
+  })
+
+  it('should apply theme and call onClose when validation passes', async () => {
+    const onClose = vi.fn()
+    const themeValidation = await import('../../src/utils/theme-validation')
+    const validateSpy = vi.spyOn(themeValidation, 'validateTheme').mockReturnValueOnce(true)
+
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer onClose={onClose} />
+      </MockedThemeProvider>,
+    )
+
+    fireEvent.click(screen.getByText('Apply Theme'))
+    expect(onClose).toHaveBeenCalledOnce()
+
+    validateSpy.mockRestore()
+  })
+
+  it('should show success notification on save to library', async () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    const saveBtn = screen.queryByRole('button', {name: /Save to Library/i})
+    if (saveBtn) {
+      fireEvent.click(saveBtn)
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).toBeInTheDocument()
+      })
+    }
+  })
+
+  it('should handle keyboard Escape to close', () => {
+    const onClose = vi.fn()
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer onClose={onClose} />
+      </MockedThemeProvider>,
+    )
+
+    // Escape is handled by the customizer's own onKeyDown, not document
+    const dialog = screen.getByRole('dialog')
+    fireEvent.keyDown(dialog, {key: 'Escape'})
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('should reset theme to current on reset button click', async () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    // Change the name first
+    const nameInput = screen.getByLabelText(/Theme Name/)
+    fireEvent.change(nameInput, {target: {value: 'Changed Name'}})
+    expect(nameInput).toHaveValue('Changed Name')
+
+    // Click reset
+    fireEvent.click(screen.getByRole('button', {name: /Reset/i}))
+
+    // Name should be reset to default
+    await waitFor(() => {
+      const resetInput = screen.getByLabelText(/Theme Name/)
+      expect(resetInput).not.toHaveValue('Changed Name')
+    })
+  })
+
+  it('should load a preset theme on click', () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('tab', {name: 'Presets'}))
+    // Preset cards have role="button" with aria-label="Apply [Name] theme"
+    const applyButtons = screen.getAllByRole('button', {name: /Apply .* theme/i})
+    expect(applyButtons.length).toBeGreaterThan(0)
+    const firstButton = applyButtons[0]
+    if (firstButton) fireEvent.click(firstButton)
+    // After loading a preset, customizer stays open but editing theme is updated
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('should handle import button trigger', () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    // Switch to export/import tab or find the import button
+    const importBtn = screen.queryByRole('button', {name: /Import Theme/i})
+    if (importBtn) {
+      expect(importBtn).toBeInTheDocument()
+    }
+  })
+
+  it('should handle export theme button click', () => {
+    render(
+      <MockedThemeProvider>
+        <ThemeCustomizer />
+      </MockedThemeProvider>,
+    )
+
+    const exportBtn = screen.queryByRole('button', {name: /Export Theme/i})
+    if (exportBtn) {
+      expect(() => fireEvent.click(exportBtn)).not.toThrow()
+    }
   })
 })

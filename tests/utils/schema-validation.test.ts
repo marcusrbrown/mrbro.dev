@@ -4,7 +4,15 @@
 
 import type {ThemeExportData} from '../../src/types'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {sanitizeThemeData, THEME_EXPORT_VERSION, validateThemeExportData} from '../../src/utils/schema-validation'
+import {
+  getValidationDetails,
+  isValidTheme,
+  isValidThemeExportData,
+  sanitizeThemeData,
+  THEME_EXPORT_VERSION,
+  validateThemeExportData,
+  validateThemeSchema,
+} from '../../src/utils/schema-validation'
 
 describe('schema-validation utilities', () => {
   const validThemeExportData: ThemeExportData = {
@@ -47,7 +55,7 @@ describe('schema-validation utilities', () => {
       const invalidData = {
         ...validThemeExportData,
       }
-      delete (invalidData as any).version
+      delete (invalidData as Record<string, unknown>).version
 
       const result = validateThemeExportData(invalidData)
 
@@ -60,7 +68,7 @@ describe('schema-validation utilities', () => {
       const invalidData = {
         ...validThemeExportData,
       }
-      delete (invalidData as any).theme
+      delete (invalidData as Record<string, unknown>).theme
 
       const result = validateThemeExportData(invalidData)
 
@@ -74,7 +82,7 @@ describe('schema-validation utilities', () => {
         ...validThemeExportData,
         theme: {
           ...validThemeExportData.theme,
-          mode: 'invalid-mode' as any,
+          mode: 'invalid-mode' as unknown as 'dark',
         },
       }
 
@@ -120,9 +128,33 @@ describe('schema-validation utilities', () => {
     })
 
     it('should handle non-object input', () => {
-      expect(validateThemeExportData('string' as any).isValid).toBe(false)
-      expect(validateThemeExportData(123 as any).isValid).toBe(false)
-      expect(validateThemeExportData([] as any).isValid).toBe(false)
+      expect(validateThemeExportData('string' as unknown).isValid).toBe(false)
+      expect(validateThemeExportData(123 as unknown).isValid).toBe(false)
+      expect(validateThemeExportData([] as unknown).isValid).toBe(false)
+    })
+  })
+
+  describe('validateThemeSchema', () => {
+    it('should validate a valid theme object', () => {
+      const result = validateThemeSchema(validThemeExportData.theme)
+      expect(result.isValid).toBe(true)
+    })
+
+    it('should reject a theme with missing required fields', () => {
+      const result = validateThemeSchema({id: 'only-id'})
+      expect(result.isValid).toBe(false)
+    })
+
+    it('should reject null', () => {
+      expect(validateThemeSchema(null).isValid).toBe(false)
+    })
+
+    it('should reject a theme with invalid color format', () => {
+      const result = validateThemeSchema({
+        ...validThemeExportData.theme,
+        colors: {...validThemeExportData.theme.colors, primary: 123},
+      })
+      expect(result.isValid).toBe(false)
     })
   })
 
@@ -160,13 +192,84 @@ describe('schema-validation utilities', () => {
       const result = sanitizeThemeData(dataWithExtra)
 
       expect(result).toBeDefined()
-      expect((result as any)?.extraProperty).toBeUndefined()
-      expect((result as any)?.theme?.colors?.extraColor).toBeUndefined()
+      expect((result as Record<string, unknown>)?.extraProperty).toBeUndefined()
+      expect((result as {theme?: {colors?: Record<string, unknown>}})?.theme?.colors?.extraColor).toBeUndefined()
     })
 
     it('should handle null or undefined input', () => {
       expect(sanitizeThemeData(null)).toBeNull()
       expect(sanitizeThemeData(undefined)).toBeNull()
+    })
+  })
+
+  describe('getValidationDetails', () => {
+    it('should return isValid true and sanitizedData for valid input', () => {
+      const result = getValidationDetails(validThemeExportData)
+      expect(result.isValid).toBe(true)
+      expect(result.sanitizedData).not.toBeNull()
+    })
+
+    it('should return isValid false and no sanitizedData for invalid input', () => {
+      const result = getValidationDetails({not: 'valid'})
+      expect(result.isValid).toBe(false)
+      expect(result.sanitizedData).toBeNull()
+    })
+
+    it('should emit a warning when theme description is missing', () => {
+      const result = getValidationDetails(validThemeExportData)
+      expect(result.warnings.some(w => w.includes('description'))).toBe(true)
+    })
+
+    it('should emit a warning when theme author is missing', () => {
+      const result = getValidationDetails(validThemeExportData)
+      expect(result.warnings.some(w => w.includes('author'))).toBe(true)
+    })
+
+    it('should emit a warning when theme version is missing', () => {
+      const result = getValidationDetails(validThemeExportData)
+      expect(result.warnings.some(w => w.includes('version'))).toBe(true)
+    })
+
+    it('should not emit optional-field warnings when all optional fields are present', () => {
+      const fullData: ThemeExportData = {
+        ...validThemeExportData,
+        theme: {
+          ...validThemeExportData.theme,
+          description: 'A nice theme',
+          author: 'Test Author',
+          version: '1.0.0',
+        },
+      }
+      const result = getValidationDetails(fullData)
+      expect(result.warnings).toHaveLength(0)
+    })
+  })
+
+  describe('isValidThemeExportData', () => {
+    it('should return true for valid ThemeExportData', () => {
+      expect(isValidThemeExportData(validThemeExportData)).toBe(true)
+    })
+
+    it('should return false for invalid data', () => {
+      expect(isValidThemeExportData({invalid: true})).toBe(false)
+    })
+
+    it('should return false for null', () => {
+      expect(isValidThemeExportData(null)).toBe(false)
+    })
+  })
+
+  describe('isValidTheme', () => {
+    it('should return true for a valid theme object', () => {
+      expect(isValidTheme(validThemeExportData.theme)).toBe(true)
+    })
+
+    it('should return false for an invalid theme', () => {
+      expect(isValidTheme({id: 'no-colors'})).toBe(false)
+    })
+
+    it('should return false for null', () => {
+      expect(isValidTheme(null)).toBe(false)
     })
   })
 
