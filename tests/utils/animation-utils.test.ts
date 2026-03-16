@@ -450,8 +450,7 @@ describe('animation-utils', () => {
       debouncedFn('call3')
 
       vi.advanceTimersByTime(100)
-      expect(fn).toHaveBeenCalledOnce()
-      expect(fn).toHaveBeenCalledWith('call3')
+      expect(fn).toHaveBeenCalledExactlyOnceWith('call3')
     })
   })
 })
