@@ -266,14 +266,18 @@ export const monitorThemePerformance = (): void => {
  * Preloads critical CSS for theme switching
  */
 export const preloadThemeAssets = (): void => {
-  // Create a link element to preload the themes CSS if not already loaded
-  const existingLink = document.querySelector('link[href*="themes.css"]')
-  if (!existingLink) {
-    const link = document.createElement('link')
-    link.rel = 'preload'
-    link.as = 'style'
-    link.href = '/src/styles/themes.css'
-    document.head.append(link)
+  // In dev mode, preload the raw themes.css source file to warm the Vite
+  // dev-server cache. In production the CSS is already inlined into the
+  // hashed bundle, so injecting a link to the dev path would 404.
+  if (import.meta.env.DEV) {
+    const existingLink = document.querySelector('link[href*="themes.css"]')
+    if (!existingLink) {
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.as = 'style'
+      link.href = '/src/styles/themes.css'
+      document.head.append(link)
+    }
   }
 
   // Force browser to parse and cache theme-related selectors
