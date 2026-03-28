@@ -122,6 +122,7 @@
   "pnpm": {
     "overrides": {
       "brace-expansion": ">=5.0.5",
+      "path-to-regexp": ">=0.1.13",
       "picomatch@>=4.0.0 <4.0.4": ">=4.0.4"
     }
   }
