@@ -260,7 +260,7 @@ jobs:
           install-playwright: 'true'
 
       - name: Run Fro Bot
-        uses: fro-bot/agent@a23a1fdf8563f9c895d4d268035e218e0c96579b # v0.36.0
+        uses: fro-bot/agent@c61d02125648bbc7fec4860b511db781ca513396 # v0.36.2
         env:
           OPENCODE_PROMPT_ARTIFACT: 'true'
         with:
