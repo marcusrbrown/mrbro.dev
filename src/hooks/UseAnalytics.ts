@@ -14,7 +14,7 @@ export const useSectionTracking = <T extends HTMLElement = HTMLElement>(
   threshold = 0.5,
 ): React.RefObject<T | null> => {
   const elementRef = useRef<T>(null)
-  const hasTracked = useRef(false)
+  const hasTrackedRef = useRef(false)
 
   useEffect(() => {
     const element = elementRef.current
@@ -23,9 +23,9 @@ export const useSectionTracking = <T extends HTMLElement = HTMLElement>(
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
-          if (entry.isIntersecting && !hasTracked.current) {
+          if (entry.isIntersecting && !hasTrackedRef.current) {
             analytics.trackSectionView(sectionName)
-            hasTracked.current = true
+            hasTrackedRef.current = true
           }
         })
       },
