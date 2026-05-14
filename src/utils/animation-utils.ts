@@ -154,7 +154,7 @@ export const createSpringTransform = (scale = 1.05, _config: SpringConfig = {}):
 /**
  * Debounce utility for performance optimization
  */
-export const debounce = <T extends (...args: any[]) => any>(
+export const debounce = <T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number,
 ): ((...args: Parameters<T>) => void) => {
