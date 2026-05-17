@@ -39,7 +39,7 @@ importers:
         specifier: 4.11.2
         version: 4.11.2(playwright-core@1.59.1)
       '@bfra.me/eslint-config':
-        specifier: ^0.51.0
+        specifier: 0.51.0
         version: 0.51.0(695f4860258aa0a7f481abaff7cdeab3)
       '@bfra.me/prettier-config':
         specifier: ^0.16.0
