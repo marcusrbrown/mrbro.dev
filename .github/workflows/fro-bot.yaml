@@ -63,6 +63,12 @@ env:
       prefers-reduced-motion for animations)
     - Performance budget adherence (JS <500KB warning, total <2MB max)
     - React 19 patterns (concurrent features, modern hooks)
+    - Workflow gating (if: conditions, needs: chains, the skipped-needs
+      trap — finalize jobs that depend on conditional prepare jobs MUST
+      use !cancelled() to bypass the implicit success() guard)
+    - Silent failure paths: continue-on-error: true on local deterministic
+      steps is a red flag (use it only for external-API fetches with
+      clear fallback behavior)
 
     Project conventions (see AGENTS.md for full details):
     - Hook files use PascalCase: UseTheme.ts, not useTheme.ts
@@ -132,6 +138,14 @@ env:
     - Stale issues (no activity >30 days; recommend next step)
     - Stale PRs (no activity >7 days; stale >14 days)
     - Unassigned bugs (label bug, no assignee)
+    - Workflow health (last 7 days of workflow runs: success/failure/
+      skipped counts per workflow; flag any workflow with >50% failure
+      rate or any workflow that has produced zero successful auto-generated
+      content commits in the last 7 days when it should have)
+    - Content freshness (flag any public-facing copy claims that reference
+      dates now in the past, e.g., "available starting Q1 YYYY" where YYYY
+      has passed; flag stale tech-stack claims; flag "coming soon" markers
+      older than 90 days)
     - Cross-project intelligence (check marcusrbrown/tokentoilet and
       marcusrbrown/vbs for similar maintenance items, security advisories,
       or convention improvements that could benefit mrbro.dev; include only if
@@ -471,6 +485,9 @@ env:
     - Upstream modernization watch (category 8) MUST NOT bump pinned
       versions (Renovate-owned) or modify upstream repositories.
     - Do not create multiple summary issues.
+    - Never edit Marcus's first-person content (README intro, bio, blog
+      post bodies, about-page copy). Report stale claims; don't rewrite
+      them.
 
     Project conventions (MUST follow for code changes):
     - TypeScript strict mode: no `any`, no `@ts-ignore`, no `@ts-expect-error`
