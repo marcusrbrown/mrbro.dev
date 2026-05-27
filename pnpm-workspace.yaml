@@ -26,7 +26,7 @@ overrides:
   # GHSA-52f5-9888-hmc6 (low; via @lhci/cli > tmp and @lhci/cli > inquirer > external-editor > tmp)
   # Note: @lhci/cli pins tmp@^0.1.0 and external-editor pins tmp@^0.0.33; pnpm cannot upgrade past
   # their semver ranges without breaking the parent. Override is best-effort for any 0.2.x installs.
-  tmp@<=0.2.3: '>=0.2.4'
+  tmp@<=0.2.3: '>=0.2.6'
   uuid: '>=14.0.0'
   # GHSA-58qx-3vcg-4xpx (moderate; via @lhci/cli > lighthouse > puppeteer-core > ws)
   ws: ^8.20.1
