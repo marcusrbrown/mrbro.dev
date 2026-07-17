@@ -93,6 +93,8 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       )}
       <div
         className="code-block__content"
+        // Shiki generates this trusted markup from the source code being displayed.
+        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
         dangerouslySetInnerHTML={{__html: highlightedCode}}
         aria-label={`Code snippet in ${actualLanguage}`}
       />

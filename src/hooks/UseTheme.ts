@@ -1,6 +1,6 @@
 import type {Theme, ThemeMode} from '../types'
 import {useCallback, useMemo} from 'react'
-import {useThemeContext} from '../contexts/ThemeContext'
+import {useThemeContext} from './UseThemeContext'
 
 export interface UseThemeReturn {
   // Current theme data

@@ -1,5 +1,6 @@
 import type {Theme, ThemeContextValue, ThemeMode} from '../types'
-import {createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode} from 'react'
+import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react'
+import {ThemeContext} from '../hooks/UseThemeContext'
 import {prefersReducedMotion} from '../utils/accessibility'
 import {analytics} from '../utils/analytics'
 import {
@@ -48,8 +49,6 @@ const defaultDarkTheme: Theme = {
   },
 }
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
-
 /**
  * Synchronously detects system color scheme preference
  * Used during initialization to prevent flash of incorrect theme
@@ -69,24 +68,16 @@ const detectSystemPreference = (): 'light' | 'dark' => {
   }
 }
 
-export const useThemeContext = (): ThemeContextValue => {
-  const context = use(ThemeContext)
-  if (context === undefined) {
-    throw new Error('useThemeContext must be used within a ThemeProvider')
-  }
-  return context
-}
-
 interface ThemeProviderProps {
   children: ReactNode
 }
 
 export const ThemeProvider = ({children}: ThemeProviderProps) => {
   // Initialize theme mode from localStorage, fallback to 'system'
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => loadThemeMode())
+  const [themeModeValue, setThemeModeValue] = useState<ThemeMode>(() => loadThemeMode())
 
   // Initialize custom theme from localStorage if available
-  const [customTheme, setCustomThemeState] = useState<Theme | null>(() => loadCustomTheme())
+  const [customThemeValue, setCustomThemeValue] = useState<Theme | null>(() => loadCustomTheme())
 
   // Initialize system preference synchronously to prevent theme flash on startup
   const [systemPreference, setSystemPreference] = useState<'light' | 'dark'>(() => detectSystemPreference())
@@ -104,14 +95,14 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
   // Enhanced setThemeMode that persists to localStorage and optimizes performance
   const setThemeMode = useCallback(
     (mode: ThemeMode) => {
-      const previousMode = themeMode
+      const previousMode = themeModeValue
 
       // Track theme change analytics
       analytics.trackThemeChange(previousMode, mode)
 
       // Skip animations entirely if user prefers reduced motion
       if (prefersReducedMotion()) {
-        setThemeModeState(mode)
+        setThemeModeValue(mode)
         saveThemeMode(mode)
         return
       }
@@ -120,7 +111,7 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
       const performanceLevel = getOptimalPerformanceLevel()
       optimizeForThemeSwitch(performanceLevel)
 
-      setThemeModeState(mode)
+      setThemeModeValue(mode)
       saveThemeMode(mode)
 
       // Clean up performance optimizations after transition
@@ -128,14 +119,14 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
         cleanupThemeOptimizations()
       }, 350) // Slightly longer than max transition duration
     },
-    [themeMode],
+    [themeModeValue],
   )
 
   // Enhanced setCustomTheme that persists to localStorage and optimizes performance
   const setCustomTheme = useCallback((theme: Theme | null) => {
     // Skip animations entirely if user prefers reduced motion
     if (prefersReducedMotion()) {
-      setCustomThemeState(theme)
+      setCustomThemeValue(theme)
       if (theme) {
         saveCustomTheme(theme)
       }
@@ -146,7 +137,7 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
     const performanceLevel = getOptimalPerformanceLevel()
     optimizeForThemeSwitch(performanceLevel)
 
-    setCustomThemeState(theme)
+    setCustomThemeValue(theme)
     if (theme) {
       saveCustomTheme(theme)
     }
@@ -189,11 +180,11 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
         if (e.key === 'mrbro-dev-theme-mode') {
           // Theme mode changed in another tab
           const newThemeMode = loadThemeMode()
-          setThemeModeState(newThemeMode)
+          setThemeModeValue(newThemeMode)
         } else if (e.key === 'mrbro-dev-custom-theme') {
           // Custom theme changed in another tab
           const newCustomTheme = loadCustomTheme()
-          setCustomThemeState(newCustomTheme)
+          setCustomThemeValue(newCustomTheme)
         }
       } catch (error) {
         console.warn('Error handling cross-tab theme sync:', error)
@@ -221,11 +212,11 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
 
   // Determine current theme based on mode and system preference
   const currentTheme: Theme = (() => {
-    if (customTheme) {
-      return customTheme
+    if (customThemeValue) {
+      return customThemeValue
     }
 
-    const targetMode = themeMode === 'system' ? systemPreference : themeMode
+    const targetMode = themeModeValue === 'system' ? systemPreference : themeModeValue
     return targetMode === 'dark' ? defaultDarkTheme : defaultLightTheme
   })()
 
@@ -287,13 +278,13 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
   const contextValue: ThemeContextValue = useMemo(
     () => ({
       currentTheme,
-      themeMode,
+      themeMode: themeModeValue,
       availableThemes,
       systemPreference,
       setThemeMode,
       setCustomTheme,
     }),
-    [currentTheme, themeMode, availableThemes, systemPreference, setThemeMode, setCustomTheme],
+    [currentTheme, themeModeValue, availableThemes, systemPreference, setThemeMode, setCustomTheme],
   )
 
   return <ThemeContext value={contextValue}>{children}</ThemeContext>

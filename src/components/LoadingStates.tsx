@@ -1,5 +1,15 @@
 import React from 'react'
 
+const SKILL_SKELETON_KEYS = ['skill-1', 'skill-2', 'skill-3', 'skill-4']
+const TIMELINE_SKELETON_KEYS = ['timeline-1', 'timeline-2', 'timeline-3']
+const PRIMARY_CONTACT_SKELETON_KEYS = ['contact-primary-1', 'contact-primary-2']
+const SECONDARY_CONTACT_SKELETON_KEYS = [
+  'contact-secondary-1',
+  'contact-secondary-2',
+  'contact-secondary-3',
+  'contact-secondary-4',
+]
+
 /**
  * Reusable skeleton component for creating loading placeholders
  */
@@ -82,8 +92,8 @@ export const SkillCategorySkeleton: React.FC = () => {
         </div>
       </div>
       <div className="skill-list">
-        {Array.from({length: 4}).map((_, index) => (
-          <div key={`skill-skeleton-${index}`} className="skill-item skill-item--skeleton">
+        {SKILL_SKELETON_KEYS.map(key => (
+          <div key={key} className="skill-item skill-item--skeleton">
             <div className="skill-content">
               <Skeleton width={32} height={32} variant="rectangular" />
               <div className="skill-info">
@@ -149,8 +159,8 @@ export const TimelineSkeleton: React.FC = () => {
   return (
     <div className="career-timeline career-timeline--skeleton" aria-hidden="true">
       <div className="timeline-list">
-        {Array.from({length: 3}).map((_, index) => (
-          <div key={`timeline-skeleton-${index}`} className="timeline-item timeline-item--skeleton">
+        {TIMELINE_SKELETON_KEYS.map(key => (
+          <div key={key} className="timeline-item timeline-item--skeleton">
             <div className="timeline-marker">
               <Skeleton width={12} height={12} variant="circular" />
             </div>
@@ -180,8 +190,8 @@ export const ContactMethodsSkeleton: React.FC = () => {
   return (
     <div className="contact-methods contact-methods--skeleton" aria-hidden="true">
       <div className="contact-methods-grid contact-methods-grid--primary">
-        {Array.from({length: 2}).map((_, index) => (
-          <div key={`contact-primary-skeleton-${index}`} className="contact-method-card contact-method-card--skeleton">
+        {PRIMARY_CONTACT_SKELETON_KEYS.map(key => (
+          <div key={key} className="contact-method-card contact-method-card--skeleton">
             <div className="contact-method-link">
               <Skeleton width={48} height={48} variant="rectangular" />
               <div className="contact-method-content">
@@ -194,11 +204,8 @@ export const ContactMethodsSkeleton: React.FC = () => {
         ))}
       </div>
       <div className="contact-methods-grid contact-methods-grid--secondary">
-        {Array.from({length: 4}).map((_, index) => (
-          <div
-            key={`contact-secondary-skeleton-${index}`}
-            className="contact-method-card contact-method-card--skeleton"
-          >
+        {SECONDARY_CONTACT_SKELETON_KEYS.map(key => (
+          <div key={key} className="contact-method-card contact-method-card--skeleton">
             <div className="contact-method-link">
               <Skeleton width={48} height={48} variant="rectangular" />
               <div className="contact-method-content">
