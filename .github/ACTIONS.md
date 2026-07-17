@@ -51,6 +51,21 @@ Runs on:
 
 > **Note:** The E2E workflow uses `playwright.config.ts` which sets `retries: 2` on CI, absorbing transient network flakiness automatically.
 
+### 📰 Blog Refresh Workflow (`.github/workflows/blog-refresh.yaml`)
+
+Runs on:
+
+- Daily schedule (`45 6 * * *` UTC — off-hour, staggered from Fro Bot and Performance Testing)
+- Manual workflow dispatch
+
+**Jobs:**
+
+- **Refresh**: Runs `pnpm run blog-refresh` to fetch gists, validate, render, and write `src/data/blog-snapshot.json`; if the snapshot changed, commits with the static message `chore(blog): refresh content snapshot` and pushes to `main` (fetch + rebase before push, one retry on rejection, never force-push); no diff means no commit and no deploy trigger
+
+**Permissions:** `contents: write` only (minimal scope for committing the snapshot).
+
+**Concurrency:** Single group `blog-refresh`, `cancel-in-progress: false` — prevents overlapping refresh runs from racing on the push.
+
 ### 🔄 Renovate Workflow (`.github/workflows/renovate.yaml`)
 
 Automated dependency updates using Renovate bot.

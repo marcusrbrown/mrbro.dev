@@ -1,0 +1,77 @@
+---
+name: Blog Refresh
+
+on:
+  schedule:
+    # Daily refresh at 06:45 UTC — off-hour, staggered from fro-bot (03:30/15:30) and performance (Mon 06:00)
+    - cron: '45 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blog-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Refresh blog snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup project
+        uses: ./.github/actions/setup
+
+      - name: Run blog refresh script
+        id: refresh
+        run: pnpm run blog-refresh
+
+      - name: Check for snapshot changes
+        id: diff
+        run: |
+          if git diff --quiet -- src/data/blog-snapshot.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: No content changes
+        if: steps.diff.outputs.changed == 'false'
+        run: |
+          echo "no content changes"
+          echo "### Blog Refresh: no content changes" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push snapshot
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/blog-snapshot.json
+          git commit -m "chore(blog): refresh content snapshot"
+
+          push_once() {
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          }
+
+          if push_once; then
+            echo "### Blog Refresh: snapshot updated and pushed" >> "$GITHUB_STEP_SUMMARY"
+          elif push_once; then
+            echo "### Blog Refresh: snapshot updated and pushed (after retry)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Failed to push blog snapshot after retry."
+            echo "### Blog Refresh: push failed after retry" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "### Blog Refresh: failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "See the \`Run blog refresh script\` step output above for details." >> "$GITHUB_STEP_SUMMARY"
