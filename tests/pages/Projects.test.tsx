@@ -62,14 +62,11 @@ describe('Projects Page', () => {
   it('should render loading state', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: true,
       error: null,
       projectsLoading: true,
       projectsError: null,
-      blogLoading: true,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -81,14 +78,11 @@ describe('Projects Page', () => {
   it('should render loading message text', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: true,
       error: null,
       projectsLoading: true,
       projectsError: null,
-      blogLoading: true,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -100,14 +94,11 @@ describe('Projects Page', () => {
   it('should render error state', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: 'Connection failed',
       projectsLoading: false,
       projectsError: 'Connection failed',
-      blogLoading: false,
-      blogError: 'Connection failed',
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -120,14 +111,11 @@ describe('Projects Page', () => {
   it('should render try again button in error state', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: 'Connection failed',
       projectsLoading: false,
       projectsError: 'Connection failed',
-      blogLoading: false,
-      blogError: 'Connection failed',
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -140,14 +128,11 @@ describe('Projects Page', () => {
     const retry = vi.fn()
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: 'Connection failed',
       projectsLoading: false,
       projectsError: 'Connection failed',
-      blogLoading: false,
-      blogError: 'Connection failed',
       rateLimitReset: null,
       retry,
     })
@@ -160,14 +145,11 @@ describe('Projects Page', () => {
   it('should render project gallery when loaded', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -179,14 +161,11 @@ describe('Projects Page', () => {
   it('should open modal when project is previewed', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -206,14 +185,11 @@ describe('Projects Page', () => {
   it('should close modal when close is triggered', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })

@@ -133,15 +133,6 @@ export async function setupGitHubAPIMocking(page: Page): Promise<void> {
       body: JSON.stringify(MOCK_GITHUB_DATA.issues),
     })
   })
-
-  // Mock gists endpoint (fallback for blog posts)
-  await page.route('**/api.github.com/users/*/gists*', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([]),
-    })
-  })
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system'

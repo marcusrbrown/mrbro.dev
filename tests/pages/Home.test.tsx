@@ -132,14 +132,11 @@ describe('Home Page', () => {
   it('should render main sections', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -155,14 +152,11 @@ describe('Home Page', () => {
   it('should render project gallery section', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -174,14 +168,11 @@ describe('Home Page', () => {
   it('should render blog posts when available', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -197,10 +188,13 @@ describe('Home Page', () => {
   it('should hide the blog preview section when there are no posts', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
     mockUseBlogPosts.mockReturnValue({posts: [], getPostBySlug: vi.fn()})
 
@@ -211,14 +205,11 @@ describe('Home Page', () => {
   it('should render loading state while fetching', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: true,
       error: null,
       projectsLoading: true,
       projectsError: null,
-      blogLoading: true,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -231,14 +222,11 @@ describe('Home Page', () => {
   it('should render error state when there is an error', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: 'API error',
       projectsLoading: false,
       projectsError: 'API error',
-      blogLoading: false,
-      blogError: 'API error',
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -251,14 +239,11 @@ describe('Home Page', () => {
   it('should open modal when project is previewed', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -273,14 +258,11 @@ describe('Home Page', () => {
   it('should close modal when close is triggered', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })
@@ -296,14 +278,11 @@ describe('Home Page', () => {
   it('should navigate to a new project when onNavigate is called', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
       projectsLoading: false,
       projectsError: null,
-      blogLoading: false,
-      blogError: null,
       rateLimitReset: null,
       retry: vi.fn(),
     })

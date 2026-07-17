@@ -11,14 +11,6 @@ export interface Project {
   imageUrl?: string
 }
 
-export interface BlogPost {
-  id: string
-  title: string
-  summary: string
-  date: string
-  url: string
-}
-
 /** Curated blog post frontmatter, validated against `blog-frontmatter.schema.json`. */
 export interface BlogFrontmatter {
   title: string

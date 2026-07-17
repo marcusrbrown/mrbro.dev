@@ -1,4 +1,4 @@
-import type {BlogPost, Project} from '../types'
+import type {Project} from '../types'
 import {useCallback, useEffect, useState} from 'react'
 
 interface GitHubRepo {
@@ -16,37 +16,25 @@ interface GitHubRepo {
   topics: string[]
 }
 
-interface GitHubGist {
-  id: string
-  description: string | null
-  html_url: string
-  created_at: string
-  updated_at: string
-  public: boolean
-}
-
 export interface UseGitHubReturn {
   repos: GitHubRepo[]
   projects: Project[]
-  blogPosts: BlogPost[]
-  /** True while either feed is loading. */
+  /** True while the repos feed is loading. */
   loading: boolean
-  /** First non-null feed error, kept for callers that only care about "something failed". */
+  /** Repos feed error, kept for callers that only care about "something failed". */
   error: string | null
   projectsLoading: boolean
   projectsError: string | null
-  blogLoading: boolean
-  blogError: string | null
-  /** Reset time for an active GitHub rate limit, if one was reported by either feed. */
+  /** Reset time for an active GitHub rate limit, if one was reported. */
   rateLimitReset: Date | null
-  /** Re-invokes both feed fetches, bypassing the in-memory cache. */
+  /** Re-invokes the repos fetch, bypassing the in-memory cache. */
   retry: () => void
 }
 
 // Session-scoped cache: successful responses are reused for this long before a
 // background refetch is attempted again. Chosen to keep repeated mounts
 // (Home, Projects, Blog all use this hook) from re-hitting the GitHub API on
-// every navigation while still picking up new repos/gists within a session.
+// every navigation while still picking up new repos within a session.
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 interface CacheEntry<T> {
@@ -60,11 +48,9 @@ interface InflightRequest<T> {
 }
 
 const reposMemoryCache = new Map<string, CacheEntry<GitHubRepo[]>>()
-const gistsMemoryCache = new Map<string, CacheEntry<GitHubGist[]>>()
 const reposInflight = new Map<string, InflightRequest<GitHubRepo[]>>()
-const gistsInflight = new Map<string, InflightRequest<GitHubGist[]>>()
 
-const sessionCacheKey = (kind: 'repos' | 'gists', username: string): string => `gh-cache:${kind}:${username}`
+const sessionCacheKey = (kind: 'repos', username: string): string => `gh-cache:${kind}:${username}`
 
 function readSessionCache<T>(key: string, validate: (value: unknown) => value is T): CacheEntry<T> | null {
   try {
@@ -117,21 +103,6 @@ function isGitHubRepo(value: unknown): value is GitHubRepo {
 }
 
 const isGitHubRepoArray = (value: unknown): value is GitHubRepo[] => Array.isArray(value) && value.every(isGitHubRepo)
-
-function isGitHubGist(value: unknown): value is GitHubGist {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  return (
-    isString(v.id) &&
-    isString(v.html_url) &&
-    isString(v.created_at) &&
-    isString(v.updated_at) &&
-    (v.description === null || v.description === undefined || isString(v.description)) &&
-    (v.public === undefined || isBoolean(v.public))
-  )
-}
-
-const isGitHubGistArray = (value: unknown): value is GitHubGist[] => Array.isArray(value) && value.every(isGitHubGist)
 
 // --- Fetch + validation, independent of caching/dedup concerns. ---
 
@@ -275,29 +246,16 @@ const transformReposToProjects = (repos: GitHubRepo[]): Project[] =>
       imageUrl: undefined,
     }))
 
-const transformGistsToBlogPosts = (gists: GitHubGist[]): BlogPost[] =>
-  gists.map(gist => ({
-    id: gist.id,
-    title: gist.description || 'Untitled',
-    summary: '',
-    date: gist.created_at,
-    url: gist.html_url,
-  }))
-
 export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
   const [repos, setRepos] = useState<GitHubRepo[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const [projectsLoading, setProjectsLoading] = useState(true)
   const [projectsError, setProjectsError] = useState<string | null>(null)
-  const [blogLoading, setBlogLoading] = useState(true)
-  const [blogError, setBlogError] = useState<string | null>(null)
   const [rateLimitReset, setRateLimitReset] = useState<Date | null>(null)
   const [retryToken, setRetryToken] = useState(0)
 
   const retry = useCallback(() => {
     reposMemoryCache.delete(username)
-    gistsMemoryCache.delete(username)
     setRetryToken(token => token + 1)
   }, [username])
 
@@ -310,8 +268,6 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
       setRepos(cachedRepos.data)
       setProjects(transformReposToProjects(cachedRepos.data))
     }
-    const cachedGists = readSessionCache(sessionCacheKey('gists', username), isGitHubGistArray)
-    if (cachedGists) setBlogPosts(transformGistsToBlogPosts(cachedGists.data))
 
     const runRepos = async () => {
       setProjectsLoading(true)
@@ -347,46 +303,10 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
       if (!cancelled) setProjectsLoading(false)
     }
 
-    const runGists = async () => {
-      setBlogLoading(true)
-      const outcome = await loadFeed({
-        cacheKey: username,
-        memoryCache: gistsMemoryCache,
-        inflight: gistsInflight,
-        sessionKey: sessionCacheKey('gists', username),
-        url: `https://api.github.com/users/${username}/gists`,
-        validate: isGitHubGistArray,
-        bypassCache,
-      })
-
-      if (cancelled) return
-
-      if (outcome.ok) {
-        setBlogPosts(transformGistsToBlogPosts(outcome.data))
-        setBlogError(null)
-      } else if (!outcome.isAbort) {
-        setBlogError(outcome.error)
-        if (outcome.rateLimitReset) setRateLimitReset(outcome.rateLimitReset)
-
-        const stale = readSessionCache(sessionCacheKey('gists', username), isGitHubGistArray)
-        if (stale) {
-          setBlogPosts(transformGistsToBlogPosts(stale.data))
-        }
-      }
-
-      if (!cancelled) setBlogLoading(false)
-    }
-
     runRepos().catch(error => {
       if (!cancelled) {
         setProjectsError(error instanceof Error ? error.message : 'Network error while contacting GitHub.')
         setProjectsLoading(false)
-      }
-    })
-    runGists().catch(error => {
-      if (!cancelled) {
-        setBlogError(error instanceof Error ? error.message : 'Network error while contacting GitHub.')
-        setBlogLoading(false)
       }
     })
 
@@ -398,13 +318,10 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
   return {
     repos,
     projects,
-    blogPosts,
-    loading: projectsLoading || blogLoading,
-    error: projectsError ?? blogError ?? null,
+    loading: projectsLoading,
+    error: projectsError,
     projectsLoading,
     projectsError,
-    blogLoading,
-    blogError,
     rateLimitReset,
     retry,
   }
