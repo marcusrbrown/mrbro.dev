@@ -129,6 +129,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -146,6 +152,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -161,6 +173,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -174,6 +192,12 @@ describe('Home Page', () => {
       repos: [],
       loading: true,
       error: null,
+      projectsLoading: true,
+      projectsError: null,
+      blogLoading: true,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -188,6 +212,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: 'API error',
+      projectsLoading: false,
+      projectsError: 'API error',
+      blogLoading: false,
+      blogError: 'API error',
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -202,6 +232,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -218,6 +254,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)
@@ -235,6 +277,12 @@ describe('Home Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<HomeWrapper />)

@@ -7,7 +7,7 @@ import {usePageTitle} from '../hooks/UsePageTitle'
 
 const Projects: React.FC = () => {
   usePageTitle('Projects')
-  const {projects, loading, error} = useGitHub()
+  const {projects, projectsLoading: loading, projectsError: error, retry} = useGitHub()
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -25,7 +25,7 @@ const Projects: React.FC = () => {
     setSelectedProject(project)
   }
 
-  if (loading) {
+  if (loading && projects.length === 0) {
     return (
       <div className="projects-page-loading">
         <div className="container">
@@ -36,13 +36,13 @@ const Projects: React.FC = () => {
     )
   }
 
-  if (error) {
+  if (error && projects.length === 0) {
     return (
       <div className="projects-page-error">
         <div className="container">
           <h1>Error Loading Projects</h1>
           <p>Unable to load projects: {error}</p>
-          <button type="button" onClick={() => window.location.reload()}>
+          <button type="button" onClick={retry}>
             Try Again
           </button>
         </div>
