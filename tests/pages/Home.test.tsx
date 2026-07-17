@@ -2,12 +2,17 @@ import type {Project} from '../../src/types'
 import {fireEvent, render, screen} from '@testing-library/react'
 import {MemoryRouter} from 'react-router-dom'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {useBlogPosts} from '../../src/hooks/UseBlogPosts'
 import {useGitHub} from '../../src/hooks/UseGitHub'
 import Home from '../../src/pages/Home'
 
 // Mock hooks
 vi.mock('../../src/hooks/UseGitHub', () => ({
   useGitHub: vi.fn(),
+}))
+
+vi.mock('../../src/hooks/UseBlogPosts', () => ({
+  useBlogPosts: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/UsePageTitle', () => ({
@@ -110,6 +115,7 @@ vi.mock('../../src/components/LoadingStates', () => ({
 
 vi.mock('../../src/styles/landing-page.css', () => ({}))
 const mockUseGitHub = vi.mocked(useGitHub)
+const mockUseBlogPosts = vi.mocked(useBlogPosts)
 
 const HomeWrapper: React.FC = () => (
   <MemoryRouter>
@@ -120,6 +126,7 @@ const HomeWrapper: React.FC = () => (
 describe('Home Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockUseBlogPosts.mockReturnValue({posts: [], getPostBySlug: vi.fn()})
   })
 
   it('should render main sections', () => {
@@ -167,9 +174,7 @@ describe('Home Page', () => {
   it('should render blog posts when available', () => {
     mockUseGitHub.mockReturnValue({
       projects: [],
-      blogPosts: [
-        {id: '1', title: 'Blog Post 1', summary: 'Summary', date: '2024-01-01', url: 'https://example.com/1'},
-      ],
+      blogPosts: [],
       repos: [],
       loading: false,
       error: null,
@@ -180,9 +185,27 @@ describe('Home Page', () => {
       rateLimitReset: null,
       retry: vi.fn(),
     })
+    mockUseBlogPosts.mockReturnValue({
+      posts: [{slug: 'blog-post-1', title: 'Blog Post 1', summary: 'Summary', date: '2024-01-01'}],
+      getPostBySlug: vi.fn(),
+    })
 
     render(<HomeWrapper />)
     expect(screen.getByText('Blog Post 1')).toBeInTheDocument()
+  })
+
+  it('should hide the blog preview section when there are no posts', () => {
+    mockUseGitHub.mockReturnValue({
+      projects: [],
+      blogPosts: [],
+      repos: [],
+      loading: false,
+      error: null,
+    })
+    mockUseBlogPosts.mockReturnValue({posts: [], getPostBySlug: vi.fn()})
+
+    render(<HomeWrapper />)
+    expect(screen.queryByText('Latest Blog Posts')).not.toBeInTheDocument()
   })
 
   it('should render loading state while fetching', () => {

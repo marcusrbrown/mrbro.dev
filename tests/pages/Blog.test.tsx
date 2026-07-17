@@ -1,22 +1,18 @@
 import {render, screen} from '@testing-library/react'
 import {MemoryRouter} from 'react-router-dom'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
-import {useGitHub} from '../../src/hooks/UseGitHub'
+import {useBlogPosts} from '../../src/hooks/UseBlogPosts'
 import Blog from '../../src/pages/Blog'
 
-// Mock dependencies
-vi.mock('../../src/hooks/UseGitHub', () => ({
-  useGitHub: vi.fn(),
+vi.mock('../../src/hooks/UseBlogPosts', () => ({
+  useBlogPosts: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/UsePageTitle', () => ({
   usePageTitle: vi.fn(),
 }))
 
-vi.mock('../../src/components/BlogPost', () => ({
-  default: ({title}: {title: string}) => <div data-testid="blog-post">{title}</div>,
-}))
-const mockUseGitHub = vi.mocked(useGitHub)
+const mockUseBlogPosts = vi.mocked(useBlogPosts)
 
 const BlogWrapper: React.FC = () => (
   <MemoryRouter>
@@ -24,112 +20,87 @@ const BlogWrapper: React.FC = () => (
   </MemoryRouter>
 )
 
+const post = (overrides: Partial<ReturnType<typeof useBlogPosts>['posts'][number]> = {}) => ({
+  slug: 'post-1',
+  title: 'Post 1',
+  date: '2024-01-01',
+  summary: 'Summary 1',
+  tags: ['tag-a'],
+  ...overrides,
+})
+
 describe('Blog Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('should render loading state', () => {
-    mockUseGitHub.mockReturnValue({
-      projects: [],
-      blogPosts: [],
-      repos: [],
-      loading: true,
-      error: null,
-      projectsLoading: true,
-      projectsError: null,
-      blogLoading: true,
-      blogError: null,
-      rateLimitReset: null,
-      retry: vi.fn(),
-    })
-
-    render(<BlogWrapper />)
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-  })
-
-  it('should render error state', () => {
-    mockUseGitHub.mockReturnValue({
-      projects: [],
-      blogPosts: [],
-      repos: [],
-      loading: false,
-      error: 'Network error',
-      projectsLoading: false,
-      projectsError: 'Network error',
-      blogLoading: false,
-      blogError: 'Network error',
-      rateLimitReset: null,
-      retry: vi.fn(),
-    })
-
-    render(<BlogWrapper />)
-    expect(screen.getByText('Error loading blog posts.')).toBeInTheDocument()
-  })
-
-  it('should render blog title when loaded', () => {
-    mockUseGitHub.mockReturnValue({
-      projects: [],
-      blogPosts: [
-        {id: '1', title: 'First Post', summary: 'A summary', date: '2024-01-01', url: 'https://example.com/1'},
-        {id: '2', title: 'Second Post', summary: 'Another summary', date: '2024-01-02', url: 'https://example.com/2'},
-      ],
-      repos: [],
-      loading: false,
-      error: null,
-      projectsLoading: false,
-      projectsError: null,
-      blogLoading: false,
-      blogError: null,
-      rateLimitReset: null,
-      retry: vi.fn(),
-    })
-
+  it('should render the blog title', () => {
+    mockUseBlogPosts.mockReturnValue({posts: [], getPostBySlug: vi.fn()})
     render(<BlogWrapper />)
     expect(screen.getByRole('heading', {name: 'Blog'})).toBeInTheDocument()
   })
 
-  it('should render blog posts when loaded', () => {
-    mockUseGitHub.mockReturnValue({
-      projects: [],
-      blogPosts: [
-        {id: '1', title: 'First Post', summary: 'A summary', date: '2024-01-01', url: 'https://example.com/1'},
-        {id: '2', title: 'Second Post', summary: 'Another summary', date: '2024-01-02', url: 'https://example.com/2'},
-      ],
-      repos: [],
-      loading: false,
-      error: null,
-      projectsLoading: false,
-      projectsError: null,
-      blogLoading: false,
-      blogError: null,
-      rateLimitReset: null,
-      retry: vi.fn(),
-    })
-
+  it('should render a visible RSS feed link', () => {
+    mockUseBlogPosts.mockReturnValue({posts: [], getPostBySlug: vi.fn()})
     render(<BlogWrapper />)
-    const posts = screen.getAllByTestId('blog-post')
-    expect(posts).toHaveLength(2)
-    expect(screen.getByText('First Post')).toBeInTheDocument()
-    expect(screen.getByText('Second Post')).toBeInTheDocument()
+    expect(screen.getByRole('link', {name: 'RSS Feed'})).toHaveAttribute('href', '/feed.xml')
   })
 
-  it('should render empty state when no blog posts', () => {
-    mockUseGitHub.mockReturnValue({
-      projects: [],
-      blogPosts: [],
-      repos: [],
-      loading: false,
-      error: null,
-      projectsLoading: false,
-      projectsError: null,
-      blogLoading: false,
-      blogError: null,
-      rateLimitReset: null,
-      retry: vi.fn(),
+  it('should render 3 cards in reverse-date order with tags as labels', () => {
+    mockUseBlogPosts.mockReturnValue({
+      posts: [
+        post({slug: 'newest', title: 'Newest Post', date: '2024-03-01'}),
+        post({slug: 'middle', title: 'Middle Post', date: '2024-02-01'}),
+        post({slug: 'oldest', title: 'Oldest Post', date: '2024-01-01'}),
+      ],
+      getPostBySlug: vi.fn(),
     })
 
     render(<BlogWrapper />)
-    expect(screen.getByText('No blog posts available.')).toBeInTheDocument()
+    const headings = screen.getAllByRole('heading', {level: 2})
+    expect(headings.map(h => h.textContent)).toStrictEqual(['Newest Post', 'Middle Post', 'Oldest Post'])
+
+    const tagLists = screen.getAllByLabelText('Tags')
+    expect(tagLists).toHaveLength(3)
+    for (const tagList of tagLists) {
+      expect(tagList.tagName.toLowerCase()).toBe('ul')
+    }
+  })
+
+  it('should link cards internally to /blog/<slug>', () => {
+    mockUseBlogPosts.mockReturnValue({
+      posts: [post({slug: 'my-post', title: 'My Post'})],
+      getPostBySlug: vi.fn(),
+    })
+    render(<BlogWrapper />)
+    const links = screen.getAllByRole('link', {name: /My Post|Read more/})
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', '/blog/my-post')
+    }
+  })
+
+  it('should render BlogEmptyState when there are no posts (no bare paragraph)', () => {
+    mockUseBlogPosts.mockReturnValue({posts: [], getPostBySlug: vi.fn()})
+    render(<BlogWrapper />)
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByRole('heading', {name: 'No posts yet'})).toBeInTheDocument()
+  })
+
+  it('should render markup in title/summary/tags inert in list cards', () => {
+    mockUseBlogPosts.mockReturnValue({
+      posts: [
+        post({
+          slug: 'hostile',
+          title: '<img src=x onerror=alert(1)>Hostile Title',
+          summary: '<script>alert(1)</script>Hostile summary',
+          tags: ['<b>bold-tag</b>'],
+        }),
+      ],
+      getPostBySlug: vi.fn(),
+    })
+
+    render(<BlogWrapper />)
+    expect(screen.getByRole('heading', {level: 2})).toHaveTextContent('<img src=x onerror=alert(1)>Hostile Title')
+    expect(document.querySelector('script')).not.toBeInTheDocument()
   })
 })

@@ -1,28 +1,32 @@
 import React from 'react'
+import BlogEmptyState from '../components/BlogEmptyState'
 import BlogPost from '../components/BlogPost'
-import {useGitHub} from '../hooks/UseGitHub'
+import {useBlogPosts} from '../hooks/UseBlogPosts'
 import {usePageTitle} from '../hooks/UsePageTitle'
 
 const Blog: React.FC = () => {
   usePageTitle('Blog')
-  const {blogPosts, blogLoading: loading, blogError: error} = useGitHub()
-
-  if (loading && blogPosts.length === 0) {
-    return <div>Loading...</div>
-  }
-
-  if (error && blogPosts.length === 0) {
-    return <div>Error loading blog posts.</div>
-  }
+  const {posts} = useBlogPosts()
 
   return (
-    <div>
-      <h1>Blog</h1>
-      {blogPosts.length === 0 ? (
-        <p>No blog posts available.</p>
-      ) : (
-        blogPosts.map(post => <BlogPost key={post.id} {...post} />)
-      )}
+    <div className="blog-page">
+      <div className="container">
+        <header className="blog-page__header">
+          <h1>Blog</h1>
+          <a className="blog-page__feed-link" href="/feed.xml">
+            RSS Feed
+          </a>
+        </header>
+        {posts.length === 0 ? (
+          <BlogEmptyState />
+        ) : (
+          <div className="blog-list">
+            {posts.map(post => (
+              <BlogPost key={post.slug} {...post} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
