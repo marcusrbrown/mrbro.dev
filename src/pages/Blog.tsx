@@ -5,13 +5,13 @@ import {usePageTitle} from '../hooks/UsePageTitle'
 
 const Blog: React.FC = () => {
   usePageTitle('Blog')
-  const {blogPosts, loading, error} = useGitHub()
+  const {blogPosts, blogLoading: loading, blogError: error} = useGitHub()
 
-  if (loading) {
+  if (loading && blogPosts.length === 0) {
     return <div>Loading...</div>
   }
 
-  if (error) {
+  if (error && blogPosts.length === 0) {
     return <div>Error loading blog posts.</div>
   }
 

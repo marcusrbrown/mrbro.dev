@@ -66,6 +66,12 @@ describe('Projects Page', () => {
       repos: [],
       loading: true,
       error: null,
+      projectsLoading: true,
+      projectsError: null,
+      blogLoading: true,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)
@@ -79,6 +85,12 @@ describe('Projects Page', () => {
       repos: [],
       loading: true,
       error: null,
+      projectsLoading: true,
+      projectsError: null,
+      blogLoading: true,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)
@@ -92,6 +104,12 @@ describe('Projects Page', () => {
       repos: [],
       loading: false,
       error: 'Connection failed',
+      projectsLoading: false,
+      projectsError: 'Connection failed',
+      blogLoading: false,
+      blogError: 'Connection failed',
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)
@@ -106,10 +124,37 @@ describe('Projects Page', () => {
       repos: [],
       loading: false,
       error: 'Connection failed',
+      projectsLoading: false,
+      projectsError: 'Connection failed',
+      blogLoading: false,
+      blogError: 'Connection failed',
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)
     expect(screen.getByRole('button', {name: 'Try Again'})).toBeInTheDocument()
+  })
+
+  it('should call retry instead of reloading the page when Try Again is clicked', () => {
+    const retry = vi.fn()
+    mockUseGitHub.mockReturnValue({
+      projects: [],
+      blogPosts: [],
+      repos: [],
+      loading: false,
+      error: 'Connection failed',
+      projectsLoading: false,
+      projectsError: 'Connection failed',
+      blogLoading: false,
+      blogError: 'Connection failed',
+      rateLimitReset: null,
+      retry,
+    })
+
+    render(<ProjectsWrapper />)
+    fireEvent.click(screen.getByRole('button', {name: 'Try Again'}))
+    expect(retry).toHaveBeenCalledOnce()
   })
 
   it('should render project gallery when loaded', () => {
@@ -119,6 +164,12 @@ describe('Projects Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)
@@ -132,6 +183,12 @@ describe('Projects Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)
@@ -153,6 +210,12 @@ describe('Projects Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<ProjectsWrapper />)

@@ -16,7 +16,7 @@ import '../styles/landing-page.css'
 
 const Home: React.FC = () => {
   usePageTitle('Home')
-  const {projects, blogPosts, loading, error} = useGitHub()
+  const {projects, blogPosts, projectsLoading, projectsError, blogLoading, blogError} = useGitHub()
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -53,8 +53,11 @@ const Home: React.FC = () => {
   }
 
   // Track errors from GitHub API
-  if (error) {
-    trackError(`GitHub API Error: ${error}`, 'useGitHub')
+  if (projectsError) {
+    trackError(`GitHub API Error: ${projectsError}`, 'useGitHub')
+  }
+  if (blogError) {
+    trackError(`GitHub API Error: ${blogError}`, 'useGitHub')
   }
 
   const projectsSkeleton = (
@@ -93,7 +96,11 @@ const Home: React.FC = () => {
       {/* Featured Projects Section */}
       <section id="projects" className="projects-section" ref={projectsRef}>
         <div className="container">
-          <LoadingState loading={loading} error={error} skeleton={projectsSkeleton}>
+          <LoadingState
+            loading={projectsLoading}
+            error={projectsError && projects.length === 0 ? projectsError : null}
+            skeleton={projectsSkeleton}
+          >
             <ProjectGallery
               projects={projects}
               title="Featured Projects"
@@ -113,7 +120,11 @@ const Home: React.FC = () => {
             <h2 className="section-title">Latest Blog Posts</h2>
             <p className="section-subtitle">Thoughts on web development, best practices, and emerging technologies</p>
           </header>
-          <LoadingState loading={loading} error={error} skeleton={blogPostsSkeleton}>
+          <LoadingState
+            loading={blogLoading}
+            error={blogError && blogPosts.length === 0 ? blogError : null}
+            skeleton={blogPostsSkeleton}
+          >
             <div className="blog-list">
               {blogPosts.map(post => (
                 <BlogPost key={post.id} {...post} />

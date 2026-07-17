@@ -36,6 +36,12 @@ describe('Blog Page', () => {
       repos: [],
       loading: true,
       error: null,
+      projectsLoading: true,
+      projectsError: null,
+      blogLoading: true,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<BlogWrapper />)
@@ -49,6 +55,12 @@ describe('Blog Page', () => {
       repos: [],
       loading: false,
       error: 'Network error',
+      projectsLoading: false,
+      projectsError: 'Network error',
+      blogLoading: false,
+      blogError: 'Network error',
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<BlogWrapper />)
@@ -65,6 +77,12 @@ describe('Blog Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<BlogWrapper />)
@@ -81,6 +99,12 @@ describe('Blog Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<BlogWrapper />)
@@ -97,6 +121,12 @@ describe('Blog Page', () => {
       repos: [],
       loading: false,
       error: null,
+      projectsLoading: false,
+      projectsError: null,
+      blogLoading: false,
+      blogError: null,
+      rateLimitReset: null,
+      retry: vi.fn(),
     })
 
     render(<BlogWrapper />)
