@@ -235,7 +235,7 @@ describe('blog-refresh script', () => {
       const hostileMarkdown = `---
 title: "Hostile <script>alert(1)</script> Title"
 date: 2026-01-01
-summary: Summary
+summary: "Summary <script>alert(1)</script>"
 ---
 
 | A | B |
@@ -251,6 +251,9 @@ const x = 1
 <script>alert('xss')</script>
 
 <img src="x" onerror="alert(1)">
+
+- [x] completed task
+- [ ] pending task
 `
       const result = await buildSnapshot(
         [candidate({gistId: 'hostile', files: {'post.md': gistFile(hostileMarkdown)}})],
@@ -261,10 +264,13 @@ const x = 1
       const post = result.snapshot.posts[0]
       expect(post).toBeDefined()
       expect(post?.frontmatter.title).toBe('Hostile <script>alert(1)</script> Title')
+      expect(post?.frontmatter.summary).toBe('Summary <script>alert(1)</script>')
       expect(post?.html).not.toContain('<script>')
       expect(post?.html).not.toContain('onerror')
       expect(post?.html).toContain('<table')
       expect(post?.html).toContain('<blockquote')
+      expect(post?.html).toContain('type="checkbox"')
+      expect(post?.html).not.toContain('<script>')
     })
 
     it('keeps an existing gist slug stable when its title is edited, and derives a fresh slug for a new gist', async () => {
@@ -356,5 +362,119 @@ const x = 1
       expect(written.posts).toEqual([])
       expect(written.generator).toBe(GENERATOR)
     })
+
+    it('fetches Markdown content from gist detail rather than trusting list metadata', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            json: async () => [
+              {
+                id: 'metadata-only',
+                html_url: 'https://gist.github.com/metadata-only',
+                updated_at: '2026-01-01',
+                files: {'post.md': {filename: 'post.md', raw_url: 'https://raw.example/post.md'}},
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            json: async () => ({
+              id: 'metadata-only',
+              html_url: 'https://gist.github.com/metadata-only',
+              updated_at: '2026-01-01',
+              files: {'post.md': {filename: 'post.md'}},
+            }),
+          }),
+      )
+
+      await refreshBlogSnapshot({snapshotPath, username: 'marcusrbrown'})
+
+      const written = JSON.parse(readFileSync(snapshotPath, 'utf8')) as BlogSnapshot
+      expect(written.posts).toEqual([])
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(process.exitCode).toBe(1)
+      process.exitCode = 0
+    })
+
+    it('follows pagination so a previously published gist on page two survives', async () => {
+      const previous = {
+        ...emptySnapshot,
+        posts: [
+          {
+            slug: 'page-two',
+            frontmatter: {title: 'Page Two', date: '2026-01-01', summary: 'Sum'},
+            html: '<p>old</p>',
+            gistId: 'page-two',
+            gistUrl: 'https://gist.github.com/page-two',
+            gistUpdatedAt: '2025-01-01',
+            sourceFilename: 'post.md',
+          },
+        ],
+      }
+      writeFileSync(snapshotPath, `${JSON.stringify(previous)}\n`)
+      const pageTwo = {
+        id: 'page-two',
+        html_url: 'https://gist.github.com/page-two',
+        updated_at: '2026-01-01',
+        files: {'post.md': {}},
+      }
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers({link: '<https://api.github.com/users/marcusrbrown/gists?page=2>; rel="next"'}),
+            json: async () => [],
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            json: async () => [pageTwo],
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            json: async () => ({
+              ...pageTwo,
+              files: {'post.md': {content: validPostMarkdown('Page Two', '2026-01-01', 'Sum')}},
+            }),
+          }),
+      )
+
+      await refreshBlogSnapshot({snapshotPath, username: 'marcusrbrown'})
+      const written = JSON.parse(readFileSync(snapshotPath, 'utf8')) as BlogSnapshot
+      expect(written.posts[0]?.gistId).toBe('page-two')
+    })
+
+    it.each(['invalid json', '{"posts":[],"generatedAt":"x"}'])(
+      'fails before fetch for corrupt snapshot: %s',
+      async raw => {
+        writeFileSync(snapshotPath, raw)
+        const before = readFileSync(snapshotPath, 'utf8')
+        const fetchMock = vi.fn()
+        vi.stubGlobal('fetch', fetchMock)
+        await refreshBlogSnapshot({snapshotPath, username: 'marcusrbrown'})
+        expect(process.exitCode).toBe(1)
+        process.exitCode = 0
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(readFileSync(snapshotPath, 'utf8')).toBe(before)
+      },
+    )
   })
 })

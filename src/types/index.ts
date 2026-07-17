@@ -41,6 +41,8 @@ export interface BlogPostFull {
   gistId: string
   gistUrl: string
   gistUpdatedAt: string
+  /** Markdown filename selected from the source gist. */
+  sourceFilename?: string
 }
 
 /** Committed blog content snapshot; the refresh workflow is the sole writer. */
@@ -62,25 +64,6 @@ export interface GitHubRepository {
   stargazers_count: number
   topics: string[]
   updated_at: string
-}
-
-export interface GitHubLabel {
-  id: number
-  name: string
-  color: string
-  description: string | null
-}
-
-export interface GitHubIssue {
-  id: number
-  number: number
-  title: string
-  body: string | null
-  html_url: string
-  created_at: string
-  updated_at: string
-  labels: GitHubLabel[]
-  state: 'open' | 'closed'
 }
 
 // Re-export theme types from dedicated theme types file

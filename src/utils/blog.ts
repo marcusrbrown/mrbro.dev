@@ -15,10 +15,7 @@ import blogFrontmatterSchema from '../schemas/blog-frontmatter.schema.json'
 /** Route segments reserved by the app shell; a derived/explicit slug may not collide with these. */
 export const RESERVED_SLUGS: readonly string[] = ['blog']
 
-export interface BlogValidationResult {
-  isValid: boolean
-  errors: string[]
-}
+export type BlogValidationResult = {ok: true; value: BlogFrontmatter} | {ok: false; errors: string[]}
 
 const ajv = new Ajv({
   allErrors: true,
@@ -31,7 +28,7 @@ const ajv = new Ajv({
 
 addFormats(ajv)
 
-const validateFrontmatterSchema = ajv.compile(blogFrontmatterSchema)
+const validateFrontmatterSchema = ajv.compile<BlogFrontmatter>(blogFrontmatterSchema)
 
 const errorFormatters: Record<string, (error: ErrorObject, path: string) => string> = {
   required: (error, path) => {
@@ -85,16 +82,16 @@ export const validateBlogFrontmatter = (data: unknown): BlogValidationResult => 
   const isValid = validateFrontmatterSchema(data)
 
   if (isValid) {
-    return {isValid: true, errors: []}
+    return {ok: true, value: data}
   }
 
   const errors = validateFrontmatterSchema.errors ?? []
-  return {isValid: false, errors: formatValidationErrors(errors)}
+  return {ok: false, errors: formatValidationErrors(errors)}
 }
 
 /** Type guard confirming `data` is a valid `BlogFrontmatter` object. */
 export const isValidBlogFrontmatter = (data: unknown): data is BlogFrontmatter => {
-  return validateBlogFrontmatter(data).isValid
+  return validateBlogFrontmatter(data).ok
 }
 
 /**
@@ -112,14 +109,25 @@ export const slugify = (title: string): string => {
 }
 
 /**
- * Rejects slugs that are unsafe as a filesystem/route path segment: empty, containing
- * `..` or `/`, or colliding with a reserved app route.
+ * Rejects slugs that are unsafe as a filesystem/route path segment: empty, dot/encoded
+ * segments, separators, normalization changes, or a reserved app route collision.
  */
 export const isPathSafeSlug = (slug: string): boolean => {
-  if (slug.length === 0) {
+  if (slug.length === 0 || slug === '.' || slug === '..') {
     return false
   }
-  if (slug.includes('..') || slug.includes('/')) {
+  if (slug.includes('/') || slug.includes('\\') || /%2e|%2f/i.test(slug)) {
+    return false
+  }
+  const segments = slug.split('/')
+  if (segments.some(segment => segment === '.' || segment === '..') || slug.normalize() !== slug) {
+    return false
+  }
+  try {
+    if (new URL(`https://example.test/${slug}`).pathname !== `/${slug}`) {
+      return false
+    }
+  } catch {
     return false
   }
   if (RESERVED_SLUGS.includes(slug)) {

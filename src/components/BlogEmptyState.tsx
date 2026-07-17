@@ -1,6 +1,6 @@
 // mrbro.dev/src/components/BlogEmptyState.tsx
 
-import React from 'react'
+import type {FC} from 'react'
 
 interface BlogEmptyStateProps {
   /** Link to the author's gists profile or another feed to point visitors at. */
@@ -11,7 +11,7 @@ interface BlogEmptyStateProps {
  * Designed empty state for the blog index when the snapshot has zero posts.
  * Never renders a bare `<p>` — icon + friendly copy + a link out.
  */
-export const BlogEmptyState: React.FC<BlogEmptyStateProps> = ({gistsUrl = 'https://gist.github.com/marcusrbrown'}) => {
+export const BlogEmptyState: FC<BlogEmptyStateProps> = ({gistsUrl = 'https://gist.github.com/marcusrbrown'}) => {
   return (
     <div className="blog-empty-state" role="status">
       <svg

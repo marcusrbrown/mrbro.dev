@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test'
+import {BlogPostPage} from './pages/BlogPostPage'
 
 /**
  * Smoke tests that verify the deployed site loads correctly and all
@@ -75,12 +76,13 @@ test.describe('Base Path Smoke Tests', () => {
   })
 
   test('direct load of a prerendered post renders content without SPA redirect', async ({page}) => {
+    const blogPostPage = new BlogPostPage(page)
     const response = await page.goto('/blog/welcome-to-the-blog')
     expect(response?.status()).toBeLessThan(400)
     await page.waitForLoadState('networkidle')
 
-    await expect(page.locator('.blog-post-page__title')).toHaveText('Welcome to the Blog')
-    await expect(page.locator('.blog-post-page__body')).toBeVisible()
+    await expect(blogPostPage.title).toHaveText('Welcome to the Blog')
+    await expect(blogPostPage.body).toBeVisible()
   })
 
   test('direct load of an unknown slug falls back to the not-found state', async ({page}) => {

@@ -4,7 +4,7 @@ import type {BlogPostFull, BlogPostMeta, BlogSnapshot} from '../types'
 import blogSnapshot from '../data/blog-snapshot.json'
 import {toBlogPostMeta} from '../utils/blog'
 
-const snapshot = blogSnapshot as BlogSnapshot
+const snapshot: BlogSnapshot = blogSnapshot
 
 /**
  * Sorts posts by frontmatter date, most recent first. Ties are broken by slug for

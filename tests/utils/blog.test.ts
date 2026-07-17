@@ -21,17 +21,19 @@ describe('blog utilities', () => {
   describe('validateBlogFrontmatter / isValidBlogFrontmatter', () => {
     it('accepts valid frontmatter', () => {
       const result = validateBlogFrontmatter(validFrontmatter)
-      expect(result.isValid).toBe(true)
-      expect(result.errors).toEqual([])
+      expect(result.ok).toBe(true)
+      if (result.ok) expect(result.value).toEqual(validFrontmatter)
       expect(isValidBlogFrontmatter(validFrontmatter)).toBe(true)
     })
 
     it('rejects frontmatter missing title, date, and summary', () => {
       const result = validateBlogFrontmatter({})
-      expect(result.isValid).toBe(false)
-      expect(result.errors.some(e => e.includes('title'))).toBe(true)
-      expect(result.errors.some(e => e.includes('date'))).toBe(true)
-      expect(result.errors.some(e => e.includes('summary'))).toBe(true)
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.errors.some(e => e.includes('title'))).toBe(true)
+        expect(result.errors.some(e => e.includes('date'))).toBe(true)
+        expect(result.errors.some(e => e.includes('summary'))).toBe(true)
+      }
     })
 
     it('rejects a malformed date string without crashing', () => {
@@ -40,14 +42,14 @@ describe('blog utilities', () => {
         date: 'not-a-date',
         summary: 'Summary',
       })
-      expect(result.isValid).toBe(false)
-      expect(result.errors.some(e => e.toLowerCase().includes('date'))).toBe(true)
+      expect(result.ok).toBe(false)
+      if (!result.ok) expect(result.errors.some(e => e.toLowerCase().includes('date'))).toBe(true)
     })
 
     it('rejects non-object input without crashing', () => {
-      expect(validateBlogFrontmatter(null).isValid).toBe(false)
-      expect(validateBlogFrontmatter('nope').isValid).toBe(false)
-      expect(validateBlogFrontmatter(42).isValid).toBe(false)
+      expect(validateBlogFrontmatter(null).ok).toBe(false)
+      expect(validateBlogFrontmatter('nope').ok).toBe(false)
+      expect(validateBlogFrontmatter(42).ok).toBe(false)
     })
   })
 
@@ -63,6 +65,10 @@ describe('blog utilities', () => {
     it('rejects path traversal, slashes, empty strings, and reserved names', () => {
       expect(isPathSafeSlug('../escape')).toBe(false)
       expect(isPathSafeSlug('a/b')).toBe(false)
+      expect(isPathSafeSlug('.')).toBe(false)
+      expect(isPathSafeSlug('..')).toBe(false)
+      expect(isPathSafeSlug('%2e%2e')).toBe(false)
+      expect(isPathSafeSlug('a/./b')).toBe(false)
       expect(isPathSafeSlug('')).toBe(false)
       expect(isPathSafeSlug('blog')).toBe(false)
     })

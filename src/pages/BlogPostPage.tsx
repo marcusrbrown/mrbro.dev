@@ -1,11 +1,11 @@
 // mrbro.dev/src/pages/BlogPostPage.tsx
 
-import React from 'react'
+import type {FC} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {useBlogPosts} from '../hooks/UseBlogPosts'
 import {usePageTitle} from '../hooks/UsePageTitle'
 
-const BlogPostPage: React.FC = () => {
+const BlogPostPage: FC = () => {
   const {slug} = useParams<{slug: string}>()
   const {getPostBySlug} = useBlogPosts()
   const post = slug ? getPostBySlug(slug) : undefined

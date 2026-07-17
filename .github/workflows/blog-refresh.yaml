@@ -30,6 +30,9 @@ jobs:
       - name: Run blog refresh script
         id: refresh
         run: pnpm run blog-refresh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BLOG_REFRESH_SUMMARY_PATH: .blog-refresh-summary.md
 
       - name: Check for snapshot changes
         id: diff
@@ -44,7 +47,8 @@ jobs:
         if: steps.diff.outputs.changed == 'false'
         run: |
           echo "no content changes"
-          echo "### Blog Refresh: no content changes" >> "$GITHUB_STEP_SUMMARY"
+          cat .blog-refresh-summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit SHA: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit and push snapshot
         if: steps.diff.outputs.changed == 'true'
@@ -61,9 +65,13 @@ jobs:
           }
 
           if push_once; then
-            echo "### Blog Refresh: snapshot updated and pushed" >> "$GITHUB_STEP_SUMMARY"
+            { cat .blog-refresh-summary.md; echo "- Commit SHA: $(git rev-parse HEAD)"; } >> "$GITHUB_STEP_SUMMARY"
           elif push_once; then
-            echo "### Blog Refresh: snapshot updated and pushed (after retry)" >> "$GITHUB_STEP_SUMMARY"
+            {
+              cat .blog-refresh-summary.md
+              echo "- Blog snapshot pushed after retry"
+              echo "- Commit SHA: $(git rev-parse HEAD)"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::error::Failed to push blog snapshot after retry."
             echo "### Blog Refresh: push failed after retry" >> "$GITHUB_STEP_SUMMARY"

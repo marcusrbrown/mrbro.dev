@@ -16,8 +16,9 @@
 
 import type {Element, Root as HastRoot} from 'hast'
 import type {BundledLanguage, Highlighter} from 'shiki'
-import type {BlogFrontmatter, BlogPostFull, BlogSnapshot} from '../src/types'
-import {readFileSync, writeFileSync} from 'node:fs'
+import type {BlogPostFull, BlogSnapshot} from '../src/types'
+import {existsSync, readFileSync, renameSync, unlinkSync, writeFileSync} from 'node:fs'
+import {dirname, join} from 'node:path'
 import process from 'node:process'
 import rehypeSanitize, {defaultSchema, type Options as SanitizeSchema} from 'rehype-sanitize'
 import rehypeStringify from 'rehype-stringify'
@@ -104,11 +105,21 @@ type MarkdownSourceResult = {filename: string; content: string} | {error: string
  * automatically; multiple `.md` files require an explicit frontmatter `source` field
  * naming one of them, otherwise selection fails naming every candidate file.
  */
-export const selectMarkdownSource = (files: Record<string, GistFile>): MarkdownSourceResult => {
-  const markdownEntries = Object.entries(files).filter(([name]) => name.toLowerCase().endsWith('.md'))
+export const selectMarkdownSource = (
+  files: Record<string, GistFile>,
+  preferredFilename?: string,
+): MarkdownSourceResult => {
+  const markdownEntries = Object.entries(files)
+    .filter(([name]) => name.toLowerCase().endsWith('.md'))
+    .sort(([a], [b]) => a.localeCompare(b))
 
   if (markdownEntries.length === 0) {
     return {error: 'No Markdown file found in gist'}
+  }
+
+  if (preferredFilename) {
+    const preferred = markdownEntries.find(([name]) => name === preferredFilename)
+    if (preferred) return {filename: preferred[0], content: preferred[1].content}
   }
 
   if (markdownEntries.length === 1) {
@@ -116,19 +127,26 @@ export const selectMarkdownSource = (files: Record<string, GistFile>): MarkdownS
     return {filename, content: file.content}
   }
 
-  const sortedNames = markdownEntries.map(([name]) => name).sort((a, b) => a.localeCompare(b))
-
+  const sourceMatches: [string, GistFile][] = []
   for (const [filename, file] of markdownEntries) {
     const split = splitFrontmatter(file.content)
     if (!split) continue
     const frontmatter = split.frontmatter as {source?: unknown} | null
     if (frontmatter && typeof frontmatter === 'object' && frontmatter.source === filename) {
-      return {filename, content: file.content}
+      sourceMatches.push([filename, file])
     }
   }
 
+  if (sourceMatches.length === 1) {
+    const [filename, file] = sourceMatches[0] ?? []
+    if (filename && file) return {filename, content: file.content}
+  }
+
   return {
-    error: `Multiple Markdown files found (${sortedNames.join(', ')}) with no frontmatter "source" field naming one of them`,
+    error:
+      sourceMatches.length > 1
+        ? `Multiple Markdown files declare matching frontmatter "source" fields`
+        : `Multiple Markdown files found (${markdownEntries.map(([name]) => name).join(', ')}) with no frontmatter "source" field naming one of them`,
   }
 }
 
@@ -253,7 +271,7 @@ export const buildSnapshot = async (
   for (const candidate of candidates) {
     const wasPublished = previousByGistId.has(candidate.gistId)
 
-    const sourceResult = selectMarkdownSource(candidate.files)
+    const sourceResult = selectMarkdownSource(candidate.files, previousByGistId.get(candidate.gistId)?.sourceFilename)
     if ('error' in sourceResult) {
       if (wasPublished) {
         const previousSlug = previousByGistId.get(candidate.gistId)?.slug ?? candidate.gistId
@@ -284,7 +302,7 @@ export const buildSnapshot = async (
     }
 
     const validation = validateBlogFrontmatter(split.frontmatter)
-    if (!validation.isValid) {
+    if (!validation.ok) {
       if (wasPublished) {
         const previousSlug = previousByGistId.get(candidate.gistId)?.slug ?? candidate.gistId
         highlighter.dispose()
@@ -298,7 +316,7 @@ export const buildSnapshot = async (
       continue
     }
 
-    const frontmatter = split.frontmatter as BlogFrontmatter
+    const frontmatter = validation.value
     const previousPost = previousByGistId.get(candidate.gistId)
     const slug = previousPost
       ? previousPost.slug
@@ -329,6 +347,7 @@ export const buildSnapshot = async (
       gistId: candidate.gistId,
       gistUrl: candidate.gistUrl,
       gistUpdatedAt: candidate.gistUpdatedAt,
+      sourceFilename: sourceResult.filename,
     })
   }
 
@@ -369,6 +388,7 @@ export const buildSnapshot = async (
 
 interface GitHubGistFileResponse {
   content?: string
+  truncated?: boolean
 }
 
 interface GitHubGistResponse {
@@ -379,7 +399,18 @@ interface GitHubGistResponse {
   files?: Record<string, GitHubGistFileResponse>
 }
 
-const isGistArray = (data: unknown): data is GitHubGistResponse[] => Array.isArray(data)
+const isGist = (value: unknown): value is GitHubGistResponse => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const gist = value as Record<string, unknown>
+  if (gist.id !== undefined && typeof gist.id !== 'string') return false
+  if (gist.html_url !== undefined && typeof gist.html_url !== 'string') return false
+  if (gist.updated_at !== undefined && typeof gist.updated_at !== 'string') return false
+  if (gist.files === undefined) return true
+  if (typeof gist.files !== 'object' || gist.files === null || Array.isArray(gist.files)) return false
+  return Object.values(gist.files).every(file => typeof file === 'object' && file !== null && !Array.isArray(file))
+}
+
+const isGistArray = (data: unknown): data is GitHubGistResponse[] => Array.isArray(data) && data.every(isGist)
 
 const toCandidate = (gist: GitHubGistResponse): RefreshCandidate | null => {
   if (typeof gist.id !== 'string' || typeof gist.html_url !== 'string' || typeof gist.updated_at !== 'string') {
@@ -387,7 +418,7 @@ const toCandidate = (gist: GitHubGistResponse): RefreshCandidate | null => {
   }
 
   const files: Record<string, GistFile> = {}
-  for (const [name, file] of Object.entries(gist.files ?? {})) {
+  for (const [name, file] of Object.entries(gist.files ?? {}).sort(([a], [b]) => a.localeCompare(b))) {
     if (typeof file.content === 'string') {
       files[name] = {content: file.content}
     }
@@ -405,10 +436,144 @@ export interface RefreshOptions {
 const readPreviousSnapshot = (snapshotPath: string): BlogSnapshot => {
   try {
     const raw = readFileSync(snapshotPath, 'utf8')
-    return JSON.parse(raw) as BlogSnapshot
-  } catch {
-    return {posts: [], generatedAt: new Date().toISOString(), generator: GENERATOR}
+    const parsed: unknown = JSON.parse(raw)
+    const snapshot = parsed as {posts?: unknown; generatedAt?: unknown; generator?: unknown}
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !Array.isArray(snapshot.posts) ||
+      typeof snapshot.generatedAt !== 'string' ||
+      typeof snapshot.generator !== 'string' ||
+      !snapshot.posts.every(
+        post =>
+          typeof post === 'object' &&
+          post !== null &&
+          'slug' in post &&
+          typeof post.slug === 'string' &&
+          'gistId' in post &&
+          typeof post.gistId === 'string' &&
+          (!('sourceFilename' in post) || typeof post.sourceFilename === 'string'),
+      )
+    ) {
+      throw new Error('snapshot has the wrong shape')
+    }
+    return parsed as BlogSnapshot
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      return {posts: [], generatedAt: new Date().toISOString(), generator: GENERATOR}
+    }
+    throw new Error(`Unable to read previous blog snapshot: ${error instanceof Error ? error.message : String(error)}`)
   }
+}
+
+const atomicWrite = (path: string, content: string): void => {
+  const temporaryPath = join(dirname(path), `.${path.split('/').pop() ?? 'snapshot'}.${process.pid}.tmp`)
+  try {
+    writeFileSync(temporaryPath, content, 'utf8')
+    renameSync(temporaryPath, path)
+  } catch (error) {
+    try {
+      if (existsSync(temporaryPath)) unlinkSync(temporaryPath)
+    } catch {
+      /* preserve original error */
+    }
+    throw error
+  }
+}
+
+const nextLink = (response: Response): string | null => {
+  const link = response.headers?.get('link')
+  const match = link?.match(/<([^>]+)>;\s*rel="next"/)
+  return match?.[1] ?? null
+}
+
+const readGists = async (username: string, headers: Record<string, string>): Promise<GitHubGistResponse[]> => {
+  const gists: GitHubGistResponse[] = []
+  let url: string | null = `https://api.github.com/users/${username}/gists?per_page=100`
+  while (url) {
+    let response: Response
+    try {
+      response = await fetch(url, {headers, signal: AbortSignal.timeout(30_000)})
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'TimeoutError')
+        throw new Error(`GitHub request timed out: ${url}`)
+      throw error
+    }
+    if (!response.ok) throw new Error(`GitHub request failed (${response.status} ${response.statusText}): ${url}`)
+    const data: unknown = await response.json()
+    if (!isGistArray(data)) throw new Error(`Unexpected gist list response shape: ${url}`)
+    gists.push(...data)
+    url = nextLink(response)
+  }
+  return gists
+}
+
+const fetchCandidates = async (
+  gists: GitHubGistResponse[],
+  headers: Record<string, string>,
+): Promise<RefreshCandidate[]> => {
+  const candidates: RefreshCandidate[] = []
+  for (const gist of gists) {
+    const hasMarkdown = Object.keys(gist.files ?? {}).some(name => name.toLowerCase().endsWith('.md'))
+    if (!hasMarkdown || typeof gist.id !== 'string') continue
+    let detailResponse: Response
+    try {
+      detailResponse = await fetch(`https://api.github.com/gists/${encodeURIComponent(gist.id)}`, {
+        headers,
+        signal: AbortSignal.timeout(30_000),
+      })
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'TimeoutError') {
+        throw new Error(`GitHub request timed out: gist ${gist.id}`)
+      }
+      throw error
+    }
+    if (!detailResponse.ok)
+      throw new Error(`GitHub request failed (${detailResponse.status} ${detailResponse.statusText}): gist ${gist.id}`)
+    const detail: unknown = await detailResponse.json()
+    if (!isGist(detail)) throw new Error(`Unexpected gist detail response for ${gist.id}`)
+    if (Object.values(detail.files ?? {}).some(file => file.truncated === true)) {
+      throw new Error(`Gist ${gist.id} contains truncated file content`)
+    }
+    const candidate = toCandidate(detail)
+    if (!candidate) throw new Error(`Gist ${gist.id} detail response is missing required metadata`)
+    if (!Object.keys(candidate.files).some(name => name.toLowerCase().endsWith('.md'))) {
+      throw new Error(`Gist ${gist.id} detail response is missing Markdown content`)
+    }
+    candidates.push(candidate)
+  }
+  return candidates
+}
+
+const writeSummary = (path: string | undefined, previous: BlogSnapshot, result: BuildSnapshotResult): void => {
+  if (!path) return
+  const oldByGist = new Map(previous.posts.map(post => [post.gistId, post.slug]))
+  const newByGist = new Map(result.snapshot.posts.map(post => [post.gistId, post.slug]))
+  const safe = (value: string) =>
+    truncateForLog(value)
+      .replaceAll('`', "'")
+      .replaceAll(/[\r\n|]/g, ' ')
+  const added = result.snapshot.posts.filter(post => !oldByGist.has(post.gistId)).map(post => safe(post.slug))
+  const removed = previous.posts.filter(post => !newByGist.has(post.gistId)).map(post => safe(post.slug))
+  const updated = result.snapshot.posts
+    .filter(
+      post =>
+        oldByGist.get(post.gistId) === post.slug &&
+        previous.posts.find(old => old.gistId === post.gistId)?.gistUpdatedAt !== post.gistUpdatedAt,
+    )
+    .map(post => safe(post.slug))
+  const lines = [
+    `### Blog Refresh`,
+    `- Posts: ${previous.posts.length} → ${result.snapshot.posts.length}`,
+    `- Added: ${added.join(', ') || 'none'}`,
+    `- Removed: ${removed.join(', ') || 'none'}`,
+    `- Updated: ${updated.join(', ') || 'none'}`,
+    `- Excluded gist warnings: ${result.warnings.length}`,
+    `- generatedAt: ${safe(result.snapshot.generatedAt)}`,
+    '- Verification: `/blog/<slug>`, `/feed.xml`, `/sitemap.xml`',
+    '',
+  ]
+  atomicWrite(path, `${lines.join('\n')}\n`)
 }
 
 /**
@@ -421,54 +586,41 @@ export const refreshBlogSnapshot = async (options: RefreshOptions = {}): Promise
   const username = options.username ?? DEFAULT_USERNAME
   const token = options.token ?? process.env.GITHUB_TOKEN
 
-  const previousSnapshot = readPreviousSnapshot(snapshotPath)
+  let previousSnapshot: BlogSnapshot
+  try {
+    previousSnapshot = readPreviousSnapshot(snapshotPath)
+  } catch (error) {
+    console.error(`❌ ${truncateForLog(error instanceof Error ? error.message : String(error))}`)
+    process.exitCode = 1
+    return
+  }
 
-  let gists: GitHubGistResponse[]
   try {
     const headers: Record<string, string> = {accept: 'application/vnd.github+json'}
     if (token) {
       headers.authorization = `Bearer ${token}`
     }
 
-    const response = await fetch(`https://api.github.com/users/${username}/gists?per_page=100`, {headers})
-    if (!response.ok) {
-      console.error(`❌ Failed to fetch gists: ${response.status} ${response.statusText}`)
-      process.exitCode = 1
-      return
-    }
+    const gists = await readGists(username, headers)
+    const candidates = await fetchCandidates(gists, headers)
+    const result = await buildSnapshot(candidates, previousSnapshot)
+    writeSummary(process.env.BLOG_REFRESH_SUMMARY_PATH, previousSnapshot, result)
 
-    const data: unknown = await response.json()
-    if (!isGistArray(data)) {
-      console.error('❌ Unexpected gist list response shape')
-      process.exitCode = 1
-      return
+    if (result.fatalError) throw new Error(result.fatalError)
+
+    for (const warning of result.warnings) {
+      console.warn(`⚠️  Excluding gist ${truncateForLog(warning.gistId)}: ${truncateForLog(warning.reason)}`)
     }
-    gists = data
+    atomicWrite(snapshotPath, stableStringify(result.snapshot))
+    console.log(
+      `✅ Blog snapshot refreshed: ${result.snapshot.posts.length} post(s), ${result.warnings.length} excluded`,
+    )
+    process.exitCode = 0
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.error(`❌ Failed to fetch gists: ${truncateForLog(message)}`)
+    console.error(`❌ Blog refresh failed: ${truncateForLog(message)}`)
     process.exitCode = 1
-    return
   }
-
-  const candidates = gists.map(toCandidate).filter((candidate): candidate is RefreshCandidate => candidate !== null)
-
-  const result = await buildSnapshot(candidates, previousSnapshot)
-
-  if (result.fatalError) {
-    console.error(`❌ Blog refresh failed: ${truncateForLog(result.fatalError)}`)
-    process.exitCode = 1
-    return
-  }
-
-  for (const warning of result.warnings) {
-    console.warn(`⚠️  Excluding gist ${truncateForLog(warning.gistId)}: ${truncateForLog(warning.reason)}`)
-  }
-
-  writeFileSync(snapshotPath, stableStringify(result.snapshot))
-
-  console.log(`✅ Blog snapshot refreshed: ${result.snapshot.posts.length} post(s), ${result.warnings.length} excluded`)
-  process.exitCode = 0
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
