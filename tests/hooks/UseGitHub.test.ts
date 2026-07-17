@@ -81,6 +81,7 @@ describe('useGitHub', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
@@ -330,6 +331,65 @@ describe('useGitHub', () => {
     expect(fetchMock.mock.calls.length).toBe(callsAfterFirstMount)
     expect(second.current.repos).toHaveLength(mockRepos.length)
     expect(second.current.blogPosts).toHaveLength(mockGists.length)
+  })
+
+  it('should refetch after the cache TTL expires instead of reusing a settled inflight request', async () => {
+    const username = uniqueUsername()
+    const nowSpy = vi.spyOn(Date, 'now')
+    nowSpy.mockReturnValue(1_000_000)
+
+    const fetchMock = vi.fn((url: string) =>
+      Promise.resolve(url.includes('/gists') ? jsonResponse(mockGists) : jsonResponse(mockRepos)),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const {result: first, unmount} = renderHook(() => useGitHub(username))
+    await waitFor(() => expect(first.current.loading).toBe(false), {timeout: 3000})
+    unmount()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    nowSpy.mockReturnValue(1_000_000 + 300_001)
+
+    const {result: second} = renderHook(() => useGitHub(username))
+    await waitFor(() => expect(second.current.loading).toBe(false), {timeout: 3000})
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(second.current.repos).toHaveLength(mockRepos.length)
+    expect(second.current.blogPosts).toHaveLength(mockGists.length)
+  })
+
+  it('should keep shared in-flight requests alive when the creating hook unmounts', async () => {
+    const username = uniqueUsername()
+    let resolveRepos: ((value: unknown) => void) | undefined
+    let resolveGists: ((value: unknown) => void) | undefined
+
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/repos')) {
+        return new Promise(resolve => {
+          resolveRepos = resolve
+        })
+      }
+
+      return new Promise(resolve => {
+        resolveGists = resolve
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const first = renderHook(() => useGitHub(username))
+    const second = renderHook(() => useGitHub(username))
+
+    first.unmount()
+
+    resolveRepos?.(jsonResponse(mockRepos))
+    resolveGists?.(jsonResponse(mockGists))
+
+    await waitFor(() => expect(second.result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(second.result.current.projects).toHaveLength(1)
+    expect(second.result.current.blogPosts).toHaveLength(1)
   })
 
   it('should refetch when retry is invoked', async () => {

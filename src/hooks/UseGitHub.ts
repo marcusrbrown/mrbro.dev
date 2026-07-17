@@ -54,10 +54,15 @@ interface CacheEntry<T> {
   timestamp: number
 }
 
+interface InflightRequest<T> {
+  controller: AbortController
+  promise: Promise<FetchOutcome<T>>
+}
+
 const reposMemoryCache = new Map<string, CacheEntry<GitHubRepo[]>>()
 const gistsMemoryCache = new Map<string, CacheEntry<GitHubGist[]>>()
-const reposInflight = new Map<string, Promise<FetchOutcome<GitHubRepo[]>>>()
-const gistsInflight = new Map<string, Promise<FetchOutcome<GitHubGist[]>>>()
+const reposInflight = new Map<string, InflightRequest<GitHubRepo[]>>()
+const gistsInflight = new Map<string, InflightRequest<GitHubGist[]>>()
 
 const sessionCacheKey = (kind: 'repos' | 'gists', username: string): string => `gh-cache:${kind}:${username}`
 
@@ -196,20 +201,29 @@ async function fetchGitHubJson<T>(
 interface LoadFeedOptions<T> {
   cacheKey: string
   memoryCache: Map<string, CacheEntry<T>>
-  inflight: Map<string, Promise<FetchOutcome<T>>>
+  inflight: Map<string, InflightRequest<T>>
   sessionKey: string
   url: string
   validate: (value: unknown) => value is T
   bypassCache: boolean
-  signal: AbortSignal
+}
+
+function abortInflightRequest<T>(inflight: Map<string, InflightRequest<T>>, cacheKey: string): void {
+  const request = inflight.get(cacheKey)
+  if (!request) return
+
+  inflight.delete(cacheKey)
+  request.controller.abort()
 }
 
 // Dedupes concurrent requests for the same resource and serves fresh
 // responses from the module cache within CACHE_TTL_MS. The underlying fetch
 // uses its own AbortController so that one consumer unmounting doesn't cancel
-// the shared request for others still awaiting it.
+// the shared request for others still awaiting it. In-flight entries are always
+// cleared once the request settles so stale resolved promises don't outlive the
+// cache TTL.
 async function loadFeed<T>(options: LoadFeedOptions<T>): Promise<FetchOutcome<T>> {
-  const {cacheKey, memoryCache, inflight, sessionKey, url, validate, bypassCache, signal} = options
+  const {cacheKey, memoryCache, inflight, sessionKey, url, validate, bypassCache} = options
 
   if (!bypassCache) {
     const cached = memoryCache.get(cacheKey) ?? readSessionCache(sessionKey, validate)
@@ -219,10 +233,10 @@ async function loadFeed<T>(options: LoadFeedOptions<T>): Promise<FetchOutcome<T>
     }
   }
 
-  let promise = inflight.get(cacheKey)
-  if (!promise) {
-    promise = fetchGitHubJson(url, signal, validate).then(outcome => {
-      if (!outcome.ok) inflight.delete(cacheKey)
+  const request = inflight.get(cacheKey)
+  if (!request) {
+    const controller = new AbortController()
+    const promise = fetchGitHubJson(url, controller.signal, validate).then(outcome => {
       if (outcome.ok) {
         const entry: CacheEntry<T> = {data: outcome.data, timestamp: Date.now()}
         memoryCache.set(cacheKey, entry)
@@ -230,9 +244,21 @@ async function loadFeed<T>(options: LoadFeedOptions<T>): Promise<FetchOutcome<T>
       }
       return outcome
     })
-    inflight.set(cacheKey, promise)
+
+    inflight.set(cacheKey, {controller, promise})
+    promise.then(
+      () => {
+        if (inflight.get(cacheKey)?.promise === promise) inflight.delete(cacheKey)
+      },
+      () => {
+        if (inflight.get(cacheKey)?.promise === promise) inflight.delete(cacheKey)
+      },
+    )
+
+    return promise
   }
-  return promise
+
+  return request.promise
 }
 
 const transformReposToProjects = (repos: GitHubRepo[]): Project[] =>
@@ -280,15 +306,14 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
   const retry = useCallback(() => {
     reposMemoryCache.delete(username)
     gistsMemoryCache.delete(username)
-    reposInflight.delete(username)
-    gistsInflight.delete(username)
+    abortInflightRequest(reposInflight, username)
+    abortInflightRequest(gistsInflight, username)
     setRetryToken(token => token + 1)
   }, [username])
 
   useEffect(() => {
     let cancelled = false
     const bypassCache = retryToken > 0
-    const controller = new AbortController()
 
     const cachedRepos = readSessionCache(sessionCacheKey('repos', username), isGitHubRepoArray)
     if (cachedRepos) {
@@ -308,7 +333,6 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
         url: `https://api.github.com/users/${username}/repos?sort=updated&per_page=100`,
         validate: isGitHubRepoArray,
         bypassCache,
-        signal: controller.signal,
       })
 
       if (cancelled) return
@@ -343,7 +367,6 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
         url: `https://api.github.com/users/${username}/gists`,
         validate: isGitHubGistArray,
         bypassCache,
-        signal: controller.signal,
       })
 
       if (cancelled) return
@@ -379,7 +402,6 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
 
     return () => {
       cancelled = true
-      controller.abort()
     }
   }, [username, retryToken])
 
