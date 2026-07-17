@@ -158,7 +158,7 @@ const ContactCTA: React.FC<ContactCTAProps> = ({
     {
       id: 'twitter',
       label: 'Twitter',
-      href: 'https://twitter.com/marcusrbrown',
+      href: 'https://twitter.com/mrbrodev',
       icon: 'icon-twitter',
       type: 'social',
       description: 'Tech discussions and industry insights',
