@@ -62,12 +62,13 @@ const mockGists = [
   },
 ]
 
-const jsonResponse = (body: unknown, init: Partial<{status: number; headers: Record<string, string>}> = {}) => ({
-  ok: (init.status ?? 200) < 400,
-  status: init.status ?? 200,
-  headers: new Headers(init.headers ?? {}),
-  json: () => Promise.resolve(body),
-})
+const jsonResponse = (body: unknown, init: Partial<{status: number; headers: Record<string, string>}> = {}) =>
+  ({
+    ok: (init.status ?? 200) < 400,
+    status: init.status ?? 200,
+    headers: new Headers(init.headers ?? {}),
+    json: () => Promise.resolve(body),
+  }) as Response
 
 // Each test uses a unique username so the module-level cache/in-flight maps
 // (shared across the whole test file) don't leak state between cases.
@@ -361,8 +362,8 @@ describe('useGitHub', () => {
 
   it('should keep shared in-flight requests alive when the creating hook unmounts', async () => {
     const username = uniqueUsername()
-    let resolveRepos: ((value: unknown) => void) | undefined
-    let resolveGists: ((value: unknown) => void) | undefined
+    let resolveRepos: ((value: Response | PromiseLike<Response>) => void) | undefined
+    let resolveGists: ((value: Response | PromiseLike<Response>) => void) | undefined
 
     const fetchMock = vi.fn((url: string) => {
       if (url.includes('/repos')) {
@@ -388,6 +389,58 @@ describe('useGitHub', () => {
     await waitFor(() => expect(second.result.current.loading).toBe(false), {timeout: 3000})
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(second.result.current.projects).toHaveLength(1)
+    expect(second.result.current.blogPosts).toHaveLength(1)
+  })
+
+  it('should not abort shared in-flight requests when one consumer retries', async () => {
+    const username = uniqueUsername()
+    const aborted = {repos: false, gists: false}
+    let resolveRepos: ((value: Response | PromiseLike<Response>) => void) | undefined
+    let resolveGists: ((value: Response | PromiseLike<Response>) => void) | undefined
+
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      const requestKey = url.includes('/repos') ? 'repos' : 'gists'
+      return new Promise<Response>((resolve, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => {
+            aborted[requestKey] = true
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          },
+          {once: true},
+        )
+
+        if (requestKey === 'repos') {
+          resolveRepos = resolve
+        } else {
+          resolveGists = resolve
+        }
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const first = renderHook(() => useGitHub(username))
+    const second = renderHook(() => useGitHub(username))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), {timeout: 3000})
+
+    act(() => {
+      first.result.current.retry()
+    })
+
+    expect(aborted.repos).toBe(false)
+    expect(aborted.gists).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    resolveRepos?.(jsonResponse(mockRepos))
+    resolveGists?.(jsonResponse(mockGists))
+
+    await waitFor(() => expect(second.result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(first.result.current.loading).toBe(false)
+    expect(first.result.current.error).toBeNull()
+    expect(second.result.current.error).toBeNull()
     expect(second.result.current.projects).toHaveLength(1)
     expect(second.result.current.blogPosts).toHaveLength(1)
   })

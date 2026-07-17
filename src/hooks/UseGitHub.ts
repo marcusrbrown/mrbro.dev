@@ -208,14 +208,6 @@ interface LoadFeedOptions<T> {
   bypassCache: boolean
 }
 
-function abortInflightRequest<T>(inflight: Map<string, InflightRequest<T>>, cacheKey: string): void {
-  const request = inflight.get(cacheKey)
-  if (!request) return
-
-  inflight.delete(cacheKey)
-  request.controller.abort()
-}
-
 // Dedupes concurrent requests for the same resource and serves fresh
 // responses from the module cache within CACHE_TTL_MS. The underlying fetch
 // uses its own AbortController so that one consumer unmounting doesn't cancel
@@ -306,8 +298,6 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
   const retry = useCallback(() => {
     reposMemoryCache.delete(username)
     gistsMemoryCache.delete(username)
-    abortInflightRequest(reposInflight, username)
-    abortInflightRequest(gistsInflight, username)
     setRetryToken(token => token + 1)
   }, [username])
 
