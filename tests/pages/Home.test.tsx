@@ -109,7 +109,6 @@ vi.mock('../../src/components/LoadingStates', () => ({
     if (error) return <div data-testid="error-state">Error: {error}</div>
     return <>{children}</>
   },
-  BlogPostSkeleton: () => <div data-testid="blog-skeleton">Loading post...</div>,
   ProjectCardSkeleton: () => <div data-testid="project-skeleton">Loading project...</div>,
 }))
 

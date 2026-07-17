@@ -113,29 +113,6 @@ export const SkillCategorySkeleton: React.FC = () => {
 }
 
 /**
- * Blog Post Skeleton for loading state
- */
-export const BlogPostSkeleton: React.FC = () => {
-  return (
-    <article className="blog-post blog-post--skeleton" aria-hidden="true">
-      <div className="blog-post__content">
-        <div className="blog-post__meta">
-          <Skeleton width={80} height="0.875rem" />
-          <Skeleton width={60} height="0.875rem" />
-        </div>
-        <Skeleton width="85%" height="1.5rem" className="mb-2" />
-        <Skeleton width="100%" height="1rem" />
-        <Skeleton width="95%" height="1rem" className="mt-1" />
-        <Skeleton width="70%" height="1rem" className="mt-1" />
-        <div className="blog-post__footer mt-3">
-          <Skeleton width={100} height="1.75rem" variant="rectangular" />
-        </div>
-      </div>
-    </article>
-  )
-}
-
-/**
  * Hero Section Content Skeleton
  */
 export const HeroSkeleton: React.FC = () => {
