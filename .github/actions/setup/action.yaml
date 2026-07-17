@@ -43,7 +43,7 @@ runs:
 
     - name: Setup Node.js
       id: setup-node
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
@@ -71,7 +71,7 @@ runs:
 
     - name: Cache Playwright browsers
       if: inputs.install-playwright == 'true'
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
       id: playwright-cache
       with:
         path: ~/.cache/ms-playwright
