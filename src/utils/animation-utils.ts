@@ -154,13 +154,13 @@ export const createSpringTransform = (scale = 1.05, _config: SpringConfig = {}):
 /**
  * Debounce utility for performance optimization
  */
-export const debounce = <T extends (...args: unknown[]) => unknown>(
-  func: T,
+export const debounce = <TArgs extends unknown[], TResult>(
+  func: (...args: TArgs) => TResult,
   wait: number,
-): ((...args: Parameters<T>) => void) => {
+): ((...args: TArgs) => void) => {
   let timeout: NodeJS.Timeout | null = null
 
-  return (...args: Parameters<T>) => {
+  return (...args: TArgs) => {
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
   }

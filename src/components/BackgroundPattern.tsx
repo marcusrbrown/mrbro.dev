@@ -49,6 +49,7 @@ interface FloatingShapesProps {
 }
 
 const DEFAULT_SHAPES: ('circle' | 'square' | 'triangle')[] = ['circle', 'square', 'triangle']
+const SECTION_DIVIDER_DOT_KEYS = ['dot-1', 'dot-2', 'dot-3', 'dot-4', 'dot-5']
 
 export const FloatingShapes: React.FC<FloatingShapesProps> = ({
   className = '',
@@ -70,7 +71,7 @@ export const FloatingShapes: React.FC<FloatingShapesProps> = ({
 
   const elements = useMemo(
     () =>
-      shapeData.map((data, index) => {
+      shapeData.map(data => {
         const style = {
           '--shape-size': `${data.size}px`,
           '--animation-delay': `${data.delay}s`,
@@ -81,7 +82,7 @@ export const FloatingShapes: React.FC<FloatingShapesProps> = ({
 
         return (
           <div
-            key={`${data.shape}-${data.left}-${data.top}-${index}`}
+            key={`${data.shape}-${data.left}-${data.top}`}
             className={`floating-shape floating-shape--${data.shape} ${animated ? 'floating-shape--animated' : ''}`}
             style={style}
           />
@@ -174,8 +175,8 @@ export const SectionDivider: React.FC<SectionDividerProps> = ({variant = 'wave',
       case 'dots':
         return (
           <div className="section-divider-dots">
-            {Array.from({length: 5}).map((_, index) => (
-              <div key={`dot-${index}`} className="section-divider-dot" />
+            {SECTION_DIVIDER_DOT_KEYS.map(key => (
+              <div key={key} className="section-divider-dot" />
             ))}
           </div>
         )

@@ -28,6 +28,8 @@ const Home: React.FC = () => {
   const aboutRef = useSectionTracking<HTMLDivElement>('about')
   const projectsRef = useSectionTracking<HTMLElement>('projects')
   const blogRef = useSectionTracking<HTMLElement>('blog')
+  const projectSkeletonKeys = ['project-1', 'project-2', 'project-3', 'project-4', 'project-5', 'project-6']
+  const blogSkeletonKeys = ['blog-1', 'blog-2', 'blog-3']
 
   const handleProjectPreview = (project: Project) => {
     trackProjectClick(project.id, 'gallery')
@@ -59,16 +61,16 @@ const Home: React.FC = () => {
 
   const projectsSkeleton = (
     <div className="project-list">
-      {Array.from({length: 6}).map((_, index) => (
-        <ProjectCardSkeleton key={`project-skeleton-${index}`} />
+      {projectSkeletonKeys.map(key => (
+        <ProjectCardSkeleton key={key} />
       ))}
     </div>
   )
 
   const blogPostsSkeleton = (
     <div className="blog-list">
-      {Array.from({length: 3}).map((_, index) => (
-        <BlogPostSkeleton key={`blog-skeleton-${index}`} />
+      {blogSkeletonKeys.map(key => (
+        <BlogPostSkeleton key={key} />
       ))}
     </div>
   )
