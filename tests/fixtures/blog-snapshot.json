@@ -1,0 +1,33 @@
+{
+  "posts": [
+    {
+      "slug": "welcome-to-the-blog",
+      "frontmatter": {
+        "title": "Welcome to the Blog",
+        "date": "2026-06-01",
+        "summary": "An introductory fixture post covering tags, a highlighted code block, and basic GFM formatting.",
+        "slug": "welcome-to-the-blog",
+        "tags": ["testing", "typescript"]
+      },
+      "html": "<p>This is a fixture post used for end-to-end, accessibility, and visual testing. It exercises tags, a pre-highlighted code block, and basic GFM formatting.</p>\n<div class=\"code-block code-block--line-numbers\">\n  <div class=\"code-block__header\">\n    <span class=\"code-block__title\">example.ts</span>\n    <span class=\"code-block__language\">typescript</span>\n  </div>\n  <div class=\"code-block__content\" aria-label=\"Code snippet in typescript\"><pre class=\"shiki\" style=\"background-color:transparent\"><code><span class=\"line\">const greeting = &#39;hello&#39;</span></code></pre></div>\n</div>\n<p>More content after the code block, including a <a href=\"https://example.com\">link</a> and <strong>bold</strong> text.</p>",
+      "gistId": "fixture-gist-welcome-to-the-blog",
+      "gistUrl": "https://gist.github.com/marcusrbrown/fixture-gist-welcome-to-the-blog",
+      "gistUpdatedAt": "2026-06-01T12:00:00.000Z"
+    },
+    {
+      "slug": "minimal-fixture-post",
+      "frontmatter": {
+        "title": "Minimal Fixture Post",
+        "date": "2026-05-01",
+        "summary": "A minimal fixture post with no tags and no code blocks.",
+        "slug": "minimal-fixture-post"
+      },
+      "html": "<p>A minimal fixture post with no tags and no code blocks &mdash; used to exercise the simplest reading-experience path.</p>",
+      "gistId": "fixture-gist-minimal-fixture-post",
+      "gistUrl": "https://gist.github.com/marcusrbrown/fixture-gist-minimal-fixture-post",
+      "gistUpdatedAt": "2026-05-01T09:30:00.000Z"
+    }
+  ],
+  "generatedAt": "2026-06-01T12:00:00.000Z",
+  "generator": "test-fixture"
+}

@@ -2129,6 +2129,16 @@ a:hover {
     color: var(--color-text);
 }
 
+.blog-post-page__body a {
+    color: var(--color-link);
+    text-decoration: underline;
+}
+
+.blog-post-page__body a:hover,
+.blog-post-page__body a:focus-visible {
+    color: var(--color-link-hover);
+}
+
 .blog-post-page__body pre,
 .blog-post-page__body table {
     overflow-x: auto;

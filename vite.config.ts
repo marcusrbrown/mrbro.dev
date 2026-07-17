@@ -1,9 +1,22 @@
+import path from 'node:path'
 import process from 'node:process'
 import react from '@vitejs/plugin-react-swc'
 import {defineConfig} from 'vitest/config'
 
+// E2E fixture mechanism (see docs/plans/2026-07-17-001-feat-first-party-blog-plan.md,
+// Unit 6 KTD): when BLOG_SNAPSHOT is set, alias the snapshot import to that path so
+// test builds are deterministic and independent of the committed data file. Default
+// (unset) resolves to the committed `src/data/blog-snapshot.json` — no runtime switching.
+const blogSnapshotAlias = process.env.BLOG_SNAPSHOT
+  ? [{find: '../data/blog-snapshot.json', replacement: path.resolve(process.cwd(), process.env.BLOG_SNAPSHOT)}]
+  : []
+
 export default defineConfig({
   plugins: [react()],
+
+  resolve: {
+    alias: blogSnapshotAlias,
+  },
 
   build: {
     outDir: 'dist',

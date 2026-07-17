@@ -21,7 +21,7 @@
   "type": "module",
   "main": "src/main.tsx",
   "scripts": {
-    "build": "tsc && vite build && tsx scripts/prerender-blog.ts",
+    "build": "tsc && vite build && tsx --import ./scripts/register-blog-snapshot-loader.mjs scripts/prerender-blog.ts",
     "dev": "vite",
     "fix": "eslint --fix",
     "lint": "eslint",

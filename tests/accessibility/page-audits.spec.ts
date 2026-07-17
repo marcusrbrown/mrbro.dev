@@ -21,6 +21,8 @@ test.describe('Page Accessibility Audits', () => {
     {path: '/about', name: 'About'},
     {path: '/projects', name: 'Projects'},
     {path: '/blog', name: 'Blog'},
+    {path: '/blog/welcome-to-the-blog', name: 'Blog Post'},
+    {path: '/blog/this-slug-does-not-exist', name: 'Blog Post Not Found'},
   ]
 
   // Test each page for accessibility violations

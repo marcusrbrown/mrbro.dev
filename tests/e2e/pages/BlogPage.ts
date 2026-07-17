@@ -52,27 +52,11 @@ export class BlogPage extends BasePage {
   }
 
   /**
-   * Verify blog page is functional
+   * Verify blog page is functional. Content is rendered synchronously from the
+   * committed snapshot — no loading/error states to account for.
    */
   async verifyBlogPage(): Promise<boolean> {
-    // Wait for API calls to complete or fail
-    await this.page.waitForTimeout(4000)
-
-    // Check if we're in loading state
-    const loadingVisible = await this.page.locator('text=Loading').isVisible()
-    if (loadingVisible) {
-      return true // Loading state is valid
-    }
-
-    // Check if we're in error state
-    const errorVisible = await this.page.locator('text=Error').isVisible()
-    if (errorVisible) {
-      return true // Error state is valid
-    }
-
-    // Check basic container visibility
-    const containerVisible = await this.blogContainer.isVisible()
-    return containerVisible
+    return this.blogContainer.isVisible()
   }
 
   /**

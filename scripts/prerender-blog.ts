@@ -176,7 +176,11 @@ const readSnapshot = (snapshotPath: string): BlogSnapshot => {
  */
 export const prerenderBlog = (options: PrerenderOptions = {}): void => {
   const distPath = options.distPath ?? DEFAULT_DIST_PATH
-  const snapshotPath = options.snapshotPath ?? DEFAULT_SNAPSHOT_PATH
+  // E2E fixture mechanism (Unit 6 KTD): BLOG_SNAPSHOT overrides the snapshot path at
+  // build time (e.g. `BLOG_SNAPSHOT=tests/fixtures/blog-snapshot.json pnpm build`),
+  // mirroring the alias in `vite.config.ts` so the prerender step reads the same
+  // fixture the client bundle was built against.
+  const snapshotPath = options.snapshotPath ?? process.env.BLOG_SNAPSHOT ?? DEFAULT_SNAPSHOT_PATH
 
   const shellPath = join(distPath, 'index.html')
   const shellHtml = readFileSync(shellPath, 'utf8')
