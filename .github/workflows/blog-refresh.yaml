@@ -34,10 +34,17 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           BLOG_REFRESH_SUMMARY_PATH: .blog-refresh-summary.md
 
-      - name: Check for snapshot changes
+      - name: Run project preview refresh script
+        run: |
+          export PROJECT_PREVIEW_REFRESH_SUMMARY_PATH="$GITHUB_STEP_SUMMARY"
+          pnpm run project-preview-refresh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Check for snapshot and preview changes
         id: diff
         run: |
-          if git diff --quiet -- src/data/blog-snapshot.json; then
+          if git diff --quiet -- src/data/blog-snapshot.json public/project-previews/; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -55,8 +62,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/data/blog-snapshot.json
-          git commit -m "chore(blog): refresh content snapshot"
+          git add src/data/blog-snapshot.json public/project-previews/
+          git commit -m "chore(blog): refresh snapshot and preview images"
 
           push_once() {
             git fetch origin main
