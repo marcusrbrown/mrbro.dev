@@ -15,14 +15,14 @@ beforeEach(() => {
   if (globalThis.Blob === undefined) {
     globalThis.Blob = vi.fn().mockImplementation((content, options) => ({
       size: content.reduce(
-        (acc: number, item: any) => acc + (typeof item === 'string' ? item.length : String(item).length),
+        (acc: number, item: unknown) => acc + (typeof item === 'string' ? item.length : String(item).length),
         0,
       ),
       type: options?.type || '',
       arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)),
       text: vi
         .fn()
-        .mockResolvedValue(content.map((item: any) => (typeof item === 'string' ? item : String(item))).join('')),
+        .mockResolvedValue(content.map((item: unknown) => (typeof item === 'string' ? item : String(item))).join('')),
     }))
   }
 

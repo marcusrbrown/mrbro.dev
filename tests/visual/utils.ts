@@ -215,7 +215,7 @@ export async function setThemeMode(page: Page, theme: ThemeMode): Promise<void> 
   await page.evaluate((themeMode: ThemeMode) => {
     // Try to access the theme context through React, but fallback to manual application
     const reactRoot = document.querySelector('#root')
-    if (reactRoot && (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+    if (reactRoot && (window as {__REACT_DEVTOOLS_GLOBAL_HOOK__?: unknown}).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
       // Try to find the theme context through React fiber (complex approach)
       try {
         // This is a complex approach - let's use a simpler method instead

@@ -50,7 +50,7 @@ describe('theme-export utilities', () => {
         // eslint-disable-next-line prefer-arrow-callback
         vi.fn(function (_content, options) {
           return {type: options?.type || 'application/json'}
-        }) as any,
+        }) as unknown as typeof Blob,
       )
 
       // Mock link click

@@ -50,7 +50,7 @@ interface Thresholds {
     cls: number
     bundleSize: number
   }
-  [key: string]: any // Allow dynamic key access
+  accessibilityScore?: number
 }
 
 interface LighthouseMetrics {
@@ -73,6 +73,15 @@ interface BundleMetrics {
   cssSize: number
   fileCount: number
 }
+
+interface PerformanceMetrics {
+  timestamp: string
+  lighthouse: Record<string, LighthouseMetrics>
+  bundle?: BundleMetrics
+  commit: string
+}
+
+type LighthouseMetricKey = 'performanceScore' | 'lcp' | 'fid' | 'cls' | 'accessibilityScore'
 
 /**
  * Performance regression detector
@@ -151,10 +160,9 @@ class PerformanceRegressionDetector {
    * Load current performance metrics from Lighthouse and bundle analysis
    */
   async loadCurrentMetrics() {
-    const metrics = {
+    const metrics: PerformanceMetrics = {
       timestamp: new Date().toISOString(),
       lighthouse: {},
-      bundle: {},
       commit: process.env.GITHUB_SHA || 'local',
     }
 
@@ -170,7 +178,7 @@ class PerformanceRegressionDetector {
       metrics.bundle = bundleAnalysis
     }
 
-    return Object.keys(metrics.lighthouse).length > 0 || Object.keys(metrics.bundle).length > 0 ? metrics : null
+    return Object.keys(metrics.lighthouse).length > 0 || metrics.bundle !== undefined ? metrics : null
   }
 
   /**
@@ -259,11 +267,11 @@ class PerformanceRegressionDetector {
   /**
    * Load baseline metrics
    */
-  loadBaselineMetrics() {
+  loadBaselineMetrics(): PerformanceMetrics | null {
     if (!existsSync(this.baselinePath)) return null
 
     try {
-      return JSON.parse(readFileSync(this.baselinePath, 'utf8'))
+      return JSON.parse(readFileSync(this.baselinePath, 'utf8')) as PerformanceMetrics
     } catch (error: unknown) {
       console.warn('⚠️ Failed to load baseline metrics:', error instanceof Error ? error.message : 'Unknown error')
       return null
@@ -273,7 +281,7 @@ class PerformanceRegressionDetector {
   /**
    * Save baseline metrics
    */
-  saveBaseline(metrics: any): void {
+  saveBaseline(metrics: PerformanceMetrics): void {
     try {
       writeFileSync(this.baselinePath, JSON.stringify(metrics, null, 2))
       console.log(`💾 Baseline saved to ${this.baselinePath}`)
@@ -285,7 +293,7 @@ class PerformanceRegressionDetector {
   /**
    * Compare current metrics against baseline
    */
-  compareMetrics(current: any, baseline: any): void {
+  compareMetrics(current: PerformanceMetrics, baseline: PerformanceMetrics): void {
     console.log('📊 Comparing performance metrics...\n')
 
     // Compare Lighthouse metrics
@@ -323,10 +331,12 @@ class PerformanceRegressionDetector {
         ? ((baselineValue - currentValue) / baselineValue) * 100 // For scores, decrease is bad
         : ((currentValue - baselineValue) / baselineValue) * 100 // For timings, increase is bad
 
-      const isRegression = Math.abs(change) > this.thresholds[metric.key as keyof typeof this.thresholds]
+      const regressionThreshold = this.thresholds[metric.key as LighthouseMetricKey] ?? Number.POSITIVE_INFINITY
+      const isRegression = Math.abs(change) > regressionThreshold
       const isWarning =
         Math.abs(change) >
-        this.thresholds.warningThresholds[metric.key as keyof typeof this.thresholds.warningThresholds]
+        (this.thresholds.warningThresholds[metric.key as keyof typeof this.thresholds.warningThresholds] ??
+          Number.POSITIVE_INFINITY)
       const isImprovement = metric.reverse ? change < -2 : change < -2 // 2% improvement threshold
 
       if (isRegression && (metric.reverse ? change > 0 : change > 0)) {
@@ -408,7 +418,7 @@ class PerformanceRegressionDetector {
   /**
    * Generate comprehensive regression report
    */
-  generateReport(current: any, baseline: any): void {
+  generateReport(current: PerformanceMetrics, baseline: PerformanceMetrics | null): void {
     console.log('📈 Performance Regression Report')
     console.log('='.repeat(60))
     console.log(`Timestamp: ${current.timestamp}`)
@@ -461,7 +471,7 @@ class PerformanceRegressionDetector {
   /**
    * Generate GitHub Actions step summary
    */
-  generateGitHubSummary(current: any, baseline: any): void {
+  generateGitHubSummary(current: PerformanceMetrics, baseline: PerformanceMetrics | null): void {
     if (!process.env.GITHUB_STEP_SUMMARY) return
 
     let summary = '## 📊 Performance Regression Analysis\n\n'

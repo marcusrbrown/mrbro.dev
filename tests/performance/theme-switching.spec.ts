@@ -5,6 +5,11 @@
 
 import {expect, test} from '@playwright/test'
 
+interface LayoutShiftEntry extends PerformanceEntry {
+  value: number
+  hadRecentInput: boolean
+}
+
 test.describe('Theme Switching Performance', () => {
   test.beforeEach(async ({page}) => {
     // Navigate to home page
@@ -24,13 +29,13 @@ test.describe('Theme Switching Performance', () => {
     // Wait for theme transition to complete
     await page.waitForTimeout(500)
 
-    // Measure layout shift during theme change using any instead of strict typing
+    // Measure layout shift during theme change
     const layoutShifts = await page.evaluate(async () => {
       return new Promise<number>(resolve => {
         let cumulativeScore = 0
         new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
-            const layoutShiftEntry = entry as any
+            const layoutShiftEntry = entry as LayoutShiftEntry
             if (!layoutShiftEntry.hadRecentInput) {
               cumulativeScore += layoutShiftEntry.value
             }
@@ -87,7 +92,7 @@ test.describe('Theme Switching Performance', () => {
             let cumulativeScore = 0
             new PerformanceObserver(list => {
               for (const entry of list.getEntries()) {
-                const layoutShiftEntry = entry as any
+                const layoutShiftEntry = entry as LayoutShiftEntry
                 cumulativeScore += layoutShiftEntry.value
               }
               resolve(cumulativeScore)
@@ -327,7 +332,7 @@ test.describe('Core Web Vitals - Real User Monitoring', () => {
 
         new PerformanceObserver(list => {
           for (const entry of list.getEntries()) {
-            const layoutShiftEntry = entry as any
+            const layoutShiftEntry = entry as LayoutShiftEntry
             if (!layoutShiftEntry.hadRecentInput) {
               cumulativeScore += layoutShiftEntry.value
             }

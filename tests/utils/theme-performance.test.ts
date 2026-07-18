@@ -161,7 +161,7 @@ describe('theme-performance utilities', () => {
         }),
       }
 
-      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any)
+      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as unknown as HTMLCanvasElement)
 
       const result = supportsHardwareAcceleration()
       expect(result).toBe(true)
@@ -173,7 +173,7 @@ describe('theme-performance utilities', () => {
         getContext: vi.fn(() => null),
       }
 
-      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any)
+      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as unknown as HTMLCanvasElement)
 
       const result = supportsHardwareAcceleration()
       expect(result).toBe(false)
@@ -203,7 +203,7 @@ describe('theme-performance utilities', () => {
       const mockCanvas = {
         getContext: vi.fn(() => null),
       }
-      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any)
+      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as unknown as HTMLCanvasElement)
 
       const level = getOptimalPerformanceLevel()
       expect(level).toBe('minimal')
@@ -214,7 +214,7 @@ describe('theme-performance utilities', () => {
       const mockCanvas = {
         getContext: vi.fn(() => ({})),
       }
-      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any)
+      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as unknown as HTMLCanvasElement)
 
       // Mock normal motion preference
       vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
@@ -237,7 +237,7 @@ describe('theme-performance utilities', () => {
       const mockCanvas = {
         getContext: vi.fn(() => ({})),
       }
-      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any)
+      vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as unknown as HTMLCanvasElement)
 
       // Mock high-DPI display
       vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
@@ -275,9 +275,9 @@ describe('theme-performance utilities', () => {
       }
 
       const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-        if (tag === 'link') return mockLink as any
-        if (tag === 'div') return mockDiv as any
-        return {} as any
+        if (tag === 'link') return mockLink as unknown as HTMLElement
+        if (tag === 'div') return mockDiv as unknown as HTMLElement
+        return {} as unknown as HTMLElement
       })
       const querySelectorSpy = vi.spyOn(document, 'querySelector').mockReturnValue(null)
       const appendSpy = vi.spyOn(document.head, 'append')
@@ -306,10 +306,10 @@ describe('theme-performance utilities', () => {
         remove: vi.fn(),
       }
 
-      const querySelectorSpy = vi.spyOn(document, 'querySelector').mockReturnValue({} as any)
+      const querySelectorSpy = vi.spyOn(document, 'querySelector').mockReturnValue({} as unknown as HTMLElement)
       const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-        if (tag === 'div') return mockDiv as any
-        return {} as any
+        if (tag === 'div') return mockDiv as unknown as HTMLElement
+        return {} as unknown as HTMLElement
       })
 
       preloadThemeAssets()
@@ -334,8 +334,8 @@ describe('theme-performance utilities', () => {
       }
 
       const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-        if (tag === 'div') return mockElement as any
-        return {rel: '', as: '', href: ''} as any
+        if (tag === 'div') return mockElement as unknown as HTMLElement
+        return {rel: '', as: '', href: ''} as unknown as HTMLElement
       })
 
       const appendSpy = vi.spyOn(document.body, 'append')
