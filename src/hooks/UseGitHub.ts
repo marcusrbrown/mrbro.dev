@@ -14,7 +14,7 @@ interface GitHubRepo {
   created_at: string
   updated_at: string
   homepage: string | null
-  topics: string[]
+  topics?: string[]
 }
 
 // Curation signal: only repos carrying this GitHub topic appear in the feed.
@@ -135,11 +135,19 @@ function formatResetTime(reset: Date): string {
   }
 }
 
-async function fetchGitHubJson<T>(
+// Parses the `Link: <url>; rel="next"` response header GitHub uses for
+// pagination. Mirrors the equivalent helper in scripts/blog-refresh.ts.
+function nextLink(response: Response): string | null {
+  const link = response.headers.get('link') ?? response.headers.get('Link')
+  const match = link?.match(/<([^>]+)>;\s*rel="next"/)
+  return match?.[1] ?? null
+}
+
+async function fetchGitHubJsonPage<T>(
   url: string,
   signal: AbortSignal,
   validate: (value: unknown) => value is T,
-): Promise<FetchOutcome<T>> {
+): Promise<FetchOutcome<{data: T; response: Response}>> {
   let response: Response
   try {
     response = await fetch(url, {signal, headers: {Accept: 'application/vnd.github+json'}})
@@ -177,7 +185,29 @@ async function fetchGitHubJson<T>(
     return {ok: false, error: 'Received unexpected data shape from GitHub.', rateLimitReset: null}
   }
 
-  return {ok: true, data: json}
+  return {ok: true, data: {data: json, response}}
+}
+
+// Follows the `Link: rel="next"` header until exhausted, accumulating every
+// page's items before returning. Every page is validated with the same
+// `validate` predicate as a single-page fetch; a failure on any page surfaces
+// the same way a single-request failure would (nothing is silently dropped).
+async function fetchGitHubJsonPaginated<T>(
+  url: string,
+  signal: AbortSignal,
+  validate: (value: unknown) => value is T[],
+): Promise<FetchOutcome<T[]>> {
+  const items: T[] = []
+  let nextUrl: string | null = url
+
+  while (nextUrl) {
+    const outcome = await fetchGitHubJsonPage(nextUrl, signal, validate)
+    if (!outcome.ok) return outcome
+    items.push(...outcome.data.data)
+    nextUrl = nextLink(outcome.data.response)
+  }
+
+  return {ok: true, data: items}
 }
 
 interface LoadFeedOptions<T> {
@@ -185,9 +215,10 @@ interface LoadFeedOptions<T> {
   memoryCache: Map<string, CacheEntry<T>>
   inflight: Map<string, InflightRequest<T>>
   sessionKey: string
-  url: string
   validate: (value: unknown) => value is T
   bypassCache: boolean
+  /** Performs the (possibly paginated) fetch and returns the assembled outcome. */
+  fetch: (signal: AbortSignal) => Promise<FetchOutcome<T>>
 }
 
 // Dedupes concurrent requests for the same resource and serves fresh
@@ -197,7 +228,7 @@ interface LoadFeedOptions<T> {
 // cleared once the request settles so stale resolved promises don't outlive the
 // cache TTL.
 async function loadFeed<T>(options: LoadFeedOptions<T>): Promise<FetchOutcome<T>> {
-  const {cacheKey, memoryCache, inflight, sessionKey, url, validate, bypassCache} = options
+  const {cacheKey, memoryCache, inflight, sessionKey, validate, bypassCache, fetch: fetchPage} = options
 
   if (!bypassCache) {
     const cached = memoryCache.get(cacheKey) ?? readSessionCache(sessionKey, validate)
@@ -210,7 +241,7 @@ async function loadFeed<T>(options: LoadFeedOptions<T>): Promise<FetchOutcome<T>
   const request = inflight.get(cacheKey)
   if (!request) {
     const controller = new AbortController()
-    const promise = fetchGitHubJson(url, controller.signal, validate).then(outcome => {
+    const promise = fetchPage(controller.signal).then(outcome => {
       if (outcome.ok) {
         const entry: CacheEntry<T> = {data: outcome.data, timestamp: Date.now()}
         memoryCache.set(cacheKey, entry)
@@ -290,9 +321,14 @@ export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {
         memoryCache: reposMemoryCache,
         inflight: reposInflight,
         sessionKey: sessionCacheKey('repos', username),
-        url: `https://api.github.com/users/${username}/repos?sort=updated&per_page=100`,
         validate: isGitHubRepoArray,
         bypassCache,
+        fetch: signal =>
+          fetchGitHubJsonPaginated(
+            `https://api.github.com/users/${username}/repos?sort=updated&per_page=100`,
+            signal,
+            isGitHubRepoArray,
+          ),
       })
 
       if (cancelled) return

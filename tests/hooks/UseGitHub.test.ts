@@ -133,6 +133,41 @@ describe('useGitHub', () => {
     expect(project?.stars).toBe(42)
   })
 
+  it('should follow the Link rel="next" header to fetch every page before transforming', async () => {
+    const username = uniqueUsername()
+    const page1Repo = {
+      ...mockRepos[0],
+      id: 900,
+      name: 'page-one-repo',
+      full_name: 'user/page-one-repo',
+      topics: ['react'], // not portfolio-tagged — should not appear
+    }
+    const page2Repo = {
+      ...mockRepos[0],
+      id: 901,
+      name: 'page-two-repo',
+      full_name: 'user/page-two-repo',
+      topics: ['portfolio'],
+    }
+
+    const nextPageUrl = `https://api.github.com/users/${username}/repos?sort=updated&per_page=100&page=2`
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([page1Repo], {headers: {Link: `<${nextPageUrl}>; rel="next"`}}))
+      .mockResolvedValueOnce(jsonResponse([page2Repo]))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const {result} = renderHook(() => useGitHub(username))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(nextPageUrl)
+    expect(result.current.repos).toHaveLength(2)
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0]?.title).toBe('Page Two Repo')
+  })
+
   it('should accept a custom username', async () => {
     const username = uniqueUsername()
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse([]))
