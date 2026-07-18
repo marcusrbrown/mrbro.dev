@@ -61,6 +61,21 @@ describe('BlogPostPage', () => {
     )
   })
 
+  it.each(['http://gist.github.com/marcusrbrown/gist-1', 'https://example.com/gist-1', 'not a url'])(
+    'does not render an unsafe gist URL as a live link: %s',
+    gistUrl => {
+      mockUseBlogPosts.mockReturnValue({
+        posts: [],
+        getPostBySlug: vi.fn(() => ({...fullPost, gistUrl})),
+      })
+
+      renderAtSlug('known-post')
+
+      expect(screen.queryByRole('link', {name: 'View on GitHub'})).not.toBeInTheDocument()
+      expect(screen.getByText('View on GitHub')).toBeInTheDocument()
+    },
+  )
+
   it('renders a designed not-found state for an unknown slug, with a path back to /blog', () => {
     mockUseBlogPosts.mockReturnValue({
       posts: [],

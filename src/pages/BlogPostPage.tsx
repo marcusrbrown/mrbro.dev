@@ -5,6 +5,15 @@ import {Link, useParams} from 'react-router-dom'
 import {useBlogPosts} from '../hooks/UseBlogPosts'
 import {usePageTitle} from '../hooks/UsePageTitle'
 
+const isSafeGistUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && (url.hostname === 'gist.github.com' || url.hostname === 'github.com')
+  } catch {
+    return false
+  }
+}
+
 const BlogPostPage: FC = () => {
   const {slug} = useParams<{slug: string}>()
   const {getPostBySlug} = useBlogPosts()
@@ -55,9 +64,13 @@ const BlogPostPage: FC = () => {
               snapshot; see CodeBlock.tsx for the equivalent precedent with Shiki-rendered markup. */}
           <div className="blog-post-page__body" dangerouslySetInnerHTML={{__html: html}} />
         </article>
-        <a className="blog-post-page__gist-link" href={gistUrl} target="_blank" rel="noopener noreferrer">
-          View on GitHub
-        </a>
+        {isSafeGistUrl(gistUrl) ? (
+          <a className="blog-post-page__gist-link" href={gistUrl} target="_blank" rel="noopener noreferrer">
+            View on GitHub
+          </a>
+        ) : (
+          <span className="blog-post-page__gist-link">View on GitHub</span>
+        )}
       </div>
     </div>
   )

@@ -53,6 +53,18 @@ const SHIKI_LANGUAGES: BundledLanguage[] = [
   'go',
 ]
 const SHIKI_THEMES = {light: 'github-light', dark: 'github-dark'} as const
+const GITHUB_GIST_HOSTS = new Set(['gist.github.com', 'github.com'])
+
+/** Accepts only HTTPS URLs hosted directly by GitHub or GitHub Gists. */
+export const isSafeGistUrl = (value: unknown): value is string => {
+  if (typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && GITHUB_GIST_HOSTS.has(url.hostname)
+  } catch {
+    return false
+  }
+}
 
 const sanitizeSchema: SanitizeSchema = {
   ...defaultSchema,
@@ -269,6 +281,11 @@ export const buildSnapshot = async (
   const posts: BlogPostFull[] = []
 
   for (const candidate of candidates) {
+    if (!isSafeGistUrl(candidate.gistUrl)) {
+      warnings.push({gistId: candidate.gistId, reason: 'Invalid gist URL: expected an HTTPS GitHub URL'})
+      continue
+    }
+
     const wasPublished = previousByGistId.has(candidate.gistId)
 
     const sourceResult = selectMarkdownSource(candidate.files, previousByGistId.get(candidate.gistId)?.sourceFilename)

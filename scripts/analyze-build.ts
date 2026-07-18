@@ -19,6 +19,9 @@ const PERFORMANCE_BUDGETS = {
     total: 1_677_721,
   },
 } as const
+const CSS_HARD_BUDGET = PERFORMANCE_BUDGETS.css
+
+export const hasCssBudgetViolation = (cssSize: number): boolean => cssSize > CSS_HARD_BUDGET
 
 const BUILD_HISTORY_FILE = './build-history.json'
 const BUILD_HISTORY_MAX_ENTRIES = 50
@@ -90,6 +93,9 @@ class BuildAnalyzer {
     try {
       const analysis = this.collectBuildMetrics()
       this.validatePerformanceBudgets(analysis)
+      if (hasCssBudgetViolation(analysis.cssSize)) {
+        throw new Error(`CSS bundle exceeds hard budget of ${formatBytes(CSS_HARD_BUDGET)}`)
+      }
       this.saveAnalysisData(analysis)
 
       if (returnDataOnly) {

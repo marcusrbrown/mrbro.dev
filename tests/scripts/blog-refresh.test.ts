@@ -107,6 +107,29 @@ describe('blog-refresh script', () => {
   })
 
   describe('buildSnapshot', () => {
+    it.each([
+      ['https://gist.github.com/marcusrbrown/valid-url', true],
+      ['https://github.com/marcusrbrown/gist', true],
+      ['http://gist.github.com/marcusrbrown/insecure', false],
+      ['https://example.com/marcusrbrown/not-github', false],
+      ['not a url', false],
+    ])('accepts only safe gist URLs: %s', async (gistUrl, included) => {
+      const result = await buildSnapshot(
+        [
+          candidate({
+            gistId: `url-${included}`,
+            gistUrl,
+            files: {'post.md': gistFile(validPostMarkdown('URL Post', '2026-01-01', 'Summary'))},
+          }),
+        ],
+        emptySnapshot,
+      )
+
+      expect(result.fatalError).toBeNull()
+      expect(result.snapshot.posts).toHaveLength(included ? 1 : 0)
+      expect(result.warnings).toHaveLength(included ? 0 : 1)
+    })
+
     it('produces exactly two posts among six mixed candidates, reverse-date ordered, with rendered HTML', async () => {
       const candidates: RefreshCandidate[] = [
         candidate({
