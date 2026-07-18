@@ -210,6 +210,45 @@ describe('project-preview-refresh script', () => {
 
     const repoListingBody = (repos: Record<string, unknown>[]) => repos
 
+    it('never forwards the GitHub token to opengraph.githubassets.com, but the listing call is authenticated', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse(
+            repoListingBody([
+              {
+                id: 1,
+                full_name: 'user/repo-1',
+                description: 'desc',
+                fork: false,
+                archived: false,
+                topics: ['portfolio'],
+              },
+            ]),
+          ),
+        )
+        .mockResolvedValueOnce(imageResponse())
+      vi.stubGlobal('fetch', fetchMock)
+
+      await refreshPreviewImages({outputDir, username: 'marcusrbrown', token: 'secret-token'})
+
+      expect(process.exitCode).toBe(0)
+
+      const listingCall = fetchMock.mock.calls.find((call: unknown[]) => (call[0] as string).includes('api.github.com'))
+      const imageCall = fetchMock.mock.calls.find((call: unknown[]) =>
+        (call[0] as string).includes('opengraph.githubassets.com'),
+      )
+
+      expect(listingCall).toBeDefined()
+      expect(imageCall).toBeDefined()
+
+      const listingHeaders = listingCall?.[1]?.headers as Record<string, string>
+      const imageHeaders = imageCall?.[1]?.headers as Record<string, string>
+
+      expect(listingHeaders.authorization).toBe('Bearer secret-token')
+      expect(imageHeaders.authorization).toBeUndefined()
+    })
+
     it('happy path: writes one file for a valid portfolio repo and exits 0', async () => {
       const fetchMock = vi
         .fn()
@@ -378,6 +417,79 @@ describe('project-preview-refresh script', () => {
 
       expect(process.exitCode).toBe(1)
       expect(existsSync(join(outputDir, '1.png'))).toBe(true)
+    })
+
+    it('publish-before-prune: a rename failure during publish leaves the stale asset intact and surfaces the error', async () => {
+      mkdirSync(outputDir, {recursive: true})
+      // repo 2's asset is stale — it would be pruned on a successful run since
+      // only repo 1 is in the new listing.
+      writeFileSync(join(outputDir, '2.png'), Buffer.from('stale-content'))
+      // Force the publish rename for repo 1 to fail: renaming a staged FILE onto
+      // an existing non-empty DIRECTORY of the same name is a real fs failure
+      // (no fs mocking needed), simulating any real-world rename error.
+      mkdirSync(join(outputDir, '1.png'), {recursive: true})
+      writeFileSync(join(outputDir, '1.png', 'blocking-file'), 'x')
+
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse(
+            repoListingBody([
+              {
+                id: 1,
+                full_name: 'user/repo-1',
+                description: 'desc',
+                fork: false,
+                archived: false,
+                topics: ['portfolio'],
+              },
+            ]),
+          ),
+        )
+        .mockResolvedValueOnce(imageResponse())
+      vi.stubGlobal('fetch', fetchMock)
+
+      await refreshPreviewImages({outputDir, username: 'marcusrbrown', token: undefined})
+
+      expect(process.exitCode).toBe(1)
+      // The rename failure happened before pruning ever got a chance to run, so
+      // repo 2's stale asset must still be there, untouched.
+      const {readFileSync} = await import('node:fs')
+      expect(readFileSync(join(outputDir, '2.png'), 'utf8')).toBe('stale-content')
+      // The blocking directory that caused the rename failure is still there,
+      // proving no successful publish silently replaced it either.
+      expect(existsSync(join(outputDir, '1.png', 'blocking-file'))).toBe(true)
+    })
+
+    it('publish-before-prune: happy-path prune still removes a stale asset when publish succeeds', async () => {
+      mkdirSync(outputDir, {recursive: true})
+      writeFileSync(join(outputDir, '1.png'), Buffer.from(pngBytes()))
+      writeFileSync(join(outputDir, '2.png'), Buffer.from(pngBytes()))
+
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse(
+            repoListingBody([
+              {
+                id: 1,
+                full_name: 'user/repo-1',
+                description: 'desc',
+                fork: false,
+                archived: false,
+                topics: ['portfolio'],
+              },
+            ]),
+          ),
+        )
+        .mockResolvedValueOnce(imageResponse())
+      vi.stubGlobal('fetch', fetchMock)
+
+      await refreshPreviewImages({outputDir, username: 'marcusrbrown', token: undefined})
+
+      expect(process.exitCode).toBe(0)
+      expect(existsSync(join(outputDir, '1.png'))).toBe(true)
+      expect(existsSync(join(outputDir, '2.png'))).toBe(false)
     })
 
     it('mid-batch failure leaves no half-written file and removes the staging dir', async () => {

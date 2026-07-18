@@ -235,10 +235,14 @@ const readExistingIds = (outputDir: string): Set<number> => {
 
 /**
  * Publishes a batch of images atomically via a staging directory: writes every
- * image to a staging dir first, then — only on full success — removes stale
- * assets (repos no longer in the portfolio set) and moves the staged files into
- * place. Returns the pruned repo ids. Throws (and cleans up the staging dir)
- * on any write failure so a partial publish can never survive.
+ * image to a staging dir first, then — only on full success — moves the staged
+ * files into place, and only AFTER every publish rename has succeeded, removes
+ * stale assets (repos no longer in the portfolio set). Publish-before-prune
+ * ordering matters: if a rename fails partway through, no asset has been
+ * deleted yet, so existing assets are left intact rather than destroyed by a
+ * later step that never got its chance to run. Returns the pruned repo ids.
+ * Throws (and cleans up the staging dir) on any write/rename failure so a
+ * partial publish can never survive.
  */
 const publishBatch = (outputDir: string, images: Map<number, Buffer>, existingIds: ReadonlySet<number>): number[] => {
   mkdirSync(outputDir, {recursive: true})
@@ -251,6 +255,12 @@ const publishBatch = (outputDir: string, images: Map<number, Buffer>, existingId
       writeFileSync(join(stagingDir, filename), buffer)
     }
 
+    for (const [id] of images) {
+      const filename = previewFilename(id)
+      if (!filename) continue
+      renameSync(join(stagingDir, filename), join(outputDir, filename))
+    }
+
     const pruned: number[] = []
     for (const id of existingIds) {
       if (images.has(id)) continue
@@ -261,12 +271,6 @@ const publishBatch = (outputDir: string, images: Map<number, Buffer>, existingId
         rmSync(target)
         pruned.push(id)
       }
-    }
-
-    for (const [id] of images) {
-      const filename = previewFilename(id)
-      if (!filename) continue
-      renameSync(join(stagingDir, filename), join(outputDir, filename))
     }
 
     return pruned
@@ -315,14 +319,18 @@ export const refreshPreviewImages = async (options: RefreshOptions = {}): Promis
   const username = options.username ?? DEFAULT_USERNAME
   const token = options.token ?? process.env.GITHUB_TOKEN
 
-  const headers: Record<string, string> = {accept: 'application/vnd.github+json'}
-  if (token) headers.authorization = `Bearer ${token}`
+  // Authenticated headers are for api.github.com ONLY. They must never be
+  // forwarded to opengraph.githubassets.com — that would leak this
+  // workflow's contents-write token to a third-party CDN.
+  const apiHeaders: Record<string, string> = {accept: 'application/vnd.github+json'}
+  if (token) apiHeaders.authorization = `Bearer ${token}`
+  const imageHeaders: Record<string, string> = {accept: 'image/*'}
 
   const existingIds = readExistingIds(outputDir)
 
   let repos: RefreshRepo[]
   try {
-    const allRepos = await fetchRepoListing(username, headers)
+    const allRepos = await fetchRepoListing(username, apiHeaders)
     repos = allRepos.filter(isPortfolioRepo)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -331,7 +339,7 @@ export const refreshPreviewImages = async (options: RefreshOptions = {}): Promis
     return
   }
 
-  const batch = await buildPreviewBatch(repos, existingIds, headers)
+  const batch = await buildPreviewBatch(repos, existingIds, imageHeaders)
 
   if (batch.fatalError) {
     console.error(`❌ Project preview refresh failed: ${truncateForLog(batch.fatalError)}`)
