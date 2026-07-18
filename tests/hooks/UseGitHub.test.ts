@@ -10,6 +10,7 @@ const mockRepos = [
   {
     id: 1,
     name: 'my-project',
+    full_name: 'user/my-project',
     description: 'A great project',
     html_url: 'https://github.com/user/my-project',
     language: 'TypeScript',
@@ -19,11 +20,12 @@ const mockRepos = [
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     homepage: 'https://example.com',
-    topics: ['react', 'typescript'],
+    topics: ['react', 'typescript', 'portfolio'],
   },
   {
     id: 2,
     name: 'forked-project',
+    full_name: 'user/forked-project',
     description: 'A fork',
     html_url: 'https://github.com/user/forked-project',
     language: 'JavaScript',
@@ -33,11 +35,12 @@ const mockRepos = [
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     homepage: null,
-    topics: [],
+    topics: ['portfolio'],
   },
   {
     id: 3,
     name: 'archived-project',
+    full_name: 'user/archived-project',
     description: 'Archived',
     html_url: 'https://github.com/user/archived-project',
     language: 'Go',
@@ -47,7 +50,7 @@ const mockRepos = [
     created_at: '2022-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
     homepage: null,
-    topics: [],
+    topics: ['portfolio'],
   },
 ]
 
@@ -142,7 +145,24 @@ describe('useGitHub', () => {
     expect(fetchMock.mock.calls[0]?.[0]).toContain(username)
   })
 
-  it('should handle repos with no topics', async () => {
+  it('should exclude repos without the portfolio topic even if they pass legacy filters', async () => {
+    const untaggedRepo = {
+      ...mockRepos[0],
+      id: 99,
+      name: 'untagged-project',
+      full_name: 'user/untagged-project',
+      topics: ['react', 'typescript'],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([untaggedRepo])))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects).toHaveLength(0)
+  })
+
+  it('should exclude a repo with undefined topics without crashing', async () => {
     const repoNoTopics = {...mockRepos[0], topics: undefined as unknown as string[]}
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([repoNoTopics])))
 
@@ -150,7 +170,71 @@ describe('useGitHub', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
 
-    expect(result.current.projects[0]?.topics).toEqual([])
+    expect(result.current.projects).toHaveLength(0)
+  })
+
+  it('should exclude the site repo by case-normalized full_name even when tagged portfolio', async () => {
+    const siteRepo = {
+      ...mockRepos[0],
+      id: 100,
+      name: 'marcusrbrown.github.io',
+      full_name: 'marcusrbrown/marcusrbrown.github.io',
+      topics: ['portfolio'],
+    }
+    const siteRepoDifferentCase = {
+      ...mockRepos[0],
+      id: 101,
+      name: 'marcusrbrown.github.io',
+      full_name: 'MarcusRBrown/Marcusrbrown.GitHub.io',
+      topics: ['portfolio'],
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([siteRepo, siteRepoDifferentCase])))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects).toHaveLength(0)
+  })
+
+  it('should include every portfolio-tagged repo with no count cap (R6)', async () => {
+    const manyRepos = Array.from({length: 13}, (_, i) => ({
+      ...mockRepos[0],
+      id: 200 + i,
+      name: `portfolio-repo-${i}`,
+      full_name: `user/portfolio-repo-${i}`,
+      topics: ['portfolio'],
+    }))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(manyRepos)))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects).toHaveLength(13)
+  })
+
+  it('should return an empty project list when zero repos are tagged portfolio', async () => {
+    const untaggedRepo = {...mockRepos[0], topics: []}
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([untaggedRepo])))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects).toEqual([])
+    expect(result.current.projectsError).toBeNull()
+  })
+
+  it('should preserve topics for an included portfolio-tagged repo', async () => {
+    const repoOnlyPortfolio = {...mockRepos[0], topics: ['portfolio']}
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([repoOnlyPortfolio])))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects[0]?.topics).toEqual(['portfolio'])
   })
 
   it('should handle repos with no language', async () => {
@@ -210,6 +294,23 @@ describe('useGitHub', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.resolve(jsonResponse([{id: 'not-a-number', name: 123}]))),
+    )
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.projectsLoading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projectsError).toMatch(/unexpected data shape/i)
+    expect(result.current.repos).toEqual([])
+  })
+
+  it('should reject a repo payload missing full_name as an unexpected data shape', async () => {
+    const baseRepo = mockRepos[0]
+    if (!baseRepo) throw new Error('mockRepos[0] must be defined')
+    const {full_name: _fullName, ...repoWithoutFullName} = baseRepo
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse([repoWithoutFullName]))),
     )
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))

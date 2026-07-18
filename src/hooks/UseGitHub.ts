@@ -4,6 +4,7 @@ import {useCallback, useEffect, useState} from 'react'
 interface GitHubRepo {
   id: number
   name: string
+  full_name: string
   description: string | null
   html_url: string
   language: string | null
@@ -15,6 +16,15 @@ interface GitHubRepo {
   homepage: string | null
   topics: string[]
 }
+
+// Curation signal: only repos carrying this GitHub topic appear in the feed.
+// Feature/unfeature a repo via `gh repo edit <repo> --add-topic portfolio`.
+const PORTFOLIO_TOPIC = 'portfolio'
+
+// The site's own repo is excluded from its own feed even if tagged, matched
+// by case-normalized `full_name` (not bare `name`, which breaks on rename or
+// org move).
+const SITE_REPO_FULL_NAME = 'marcusrbrown/marcusrbrown.github.io'
 
 export interface UseGitHubReturn {
   repos: GitHubRepo[]
@@ -89,6 +99,7 @@ function isGitHubRepo(value: unknown): value is GitHubRepo {
   return (
     isNumber(v.id) &&
     isString(v.name) &&
+    isString(v.full_name) &&
     isNullableString(v.description) &&
     isString(v.html_url) &&
     isNullableString(v.language) &&
@@ -224,11 +235,14 @@ async function loadFeed<T>(options: LoadFeedOptions<T>): Promise<FetchOutcome<T>
   return request.promise
 }
 
+const isPortfolioTagged = (repo: GitHubRepo): boolean => (repo.topics ?? []).includes(PORTFOLIO_TOPIC)
+
+const isSiteRepo = (repo: GitHubRepo): boolean => repo.full_name.toLowerCase() === SITE_REPO_FULL_NAME
+
 const transformReposToProjects = (repos: GitHubRepo[]): Project[] =>
   repos
-    .filter(repo => !repo.fork && !repo.archived && repo.description)
+    .filter(repo => !repo.fork && !repo.archived && repo.description && isPortfolioTagged(repo) && !isSiteRepo(repo))
     .sort((a, b) => b.stargazers_count - a.stargazers_count)
-    .slice(0, 12)
     .map(repo => ({
       id: repo.id.toString(),
       title: repo.name
