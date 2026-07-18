@@ -28,6 +28,7 @@
 - **Explicit interfaces**: Every hook defines a return type interface in-file
 - **Theme access**: Use `useTheme()` — never import `useThemeContext` directly
 - **Async safety**: `AbortController` for fetch operations in `UseGitHub`
+- **Portfolio curation (opt-in)**: `UseGitHub`'s projects feed shows ONLY repos tagged with the `portfolio` GitHub topic. An untagged repo — including newly-created ones or ones that had the topic removed — is silently invisible in the feed; this is the intended contract, not a bug. Feature a repo: `gh repo edit <owner>/<repo> --add-topic portfolio`. Unfeature: `gh repo edit <owner>/<repo> --remove-topic portfolio`. The site's own repo (`marcusrbrown/marcusrbrown.github.io`) is always self-excluded, even if tagged.
 
 ## Testing
 
