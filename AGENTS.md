@@ -10,21 +10,22 @@ Developer portfolio — React 19+, TypeScript strict, Vite 7+, pure ESM. Deploye
 
 ```
 src/
-├── components/    # 22 React components (see components/AGENTS.md)
-├── hooks/         # 9 custom hooks — PascalCase files! (see hooks/AGENTS.md)
+├── components/    # 23 React components (see components/AGENTS.md)
+├── hooks/         # 11 custom hooks — PascalCase files! (see hooks/AGENTS.md)
 ├── contexts/      # ThemeContext — single provider wrapping App
-├── pages/         # 4 route pages: Home, Blog, Projects, About
-├── utils/         # 12 utilities — heavily theme-oriented (see utils/AGENTS.md)
+├── pages/         # 5 route pages: Home, Blog, Projects, About, BlogPostPage (/blog/:slug)
+├── utils/         # 13 utilities — heavily theme-oriented (see utils/AGENTS.md)
 ├── types/         # TypeScript types, barrel export via index.ts
-├── schemas/       # theme.schema.json for runtime validation
+├── schemas/       # theme + blog-frontmatter schemas for runtime validation
 └── styles/        # Global CSS
-scripts/           # 14 build/test automation scripts (see scripts/AGENTS.md)
+scripts/           # 18 build/test automation scripts (see scripts/AGENTS.md)
 tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
 .agents/
 └── skills/        # Agent skill definitions (agent-browser, playwright-mcp)
 .ai/plan/          # Feature implementation plans (reference only)
+docs/              # solutions/ = documented fixes by category w/ YAML frontmatter (module, tags, problem_type); plus brainstorms/, plans/, blog-system.md
 .github/
-├── workflows/     # 8 workflows: deploy, ci, e2e-tests, performance, fro-bot, fro-bot-autoheal, renovate, copilot-setup-steps
+├── workflows/     # 8 workflows: deploy, ci, e2e-tests, performance, fro-bot, blog-refresh, renovate, copilot-setup-steps
 ├── actions/setup/ # Reusable CI setup action (Node 22, pnpm, Playwright)
 └── hooks/         # Copilot hooks (pre-tool-use guardrails)
 examples/          # Usage examples (button-form-styles, use-theme)
