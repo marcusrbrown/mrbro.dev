@@ -20,7 +20,8 @@ export default defineConfig({
 
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // No prod source maps: ~2MB of .map files visitors never fetch. Source is public on GitHub.
+    sourcemap: false,
     rollupOptions: {
       external: ['shiki', '@shikijs/core', '@shikijs/transformers'],
       output: {
