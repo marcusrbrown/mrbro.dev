@@ -6,6 +6,7 @@ import {ThemeProvider} from './contexts/ThemeContext'
 import {useSyntaxHighlighting} from './hooks/UseSyntaxHighlighting'
 import About from './pages/About'
 import Blog from './pages/Blog'
+import BlogPostPage from './pages/BlogPostPage'
 import Home from './pages/Home'
 import Projects from './pages/Projects'
 import './styles/globals.css'
@@ -21,6 +22,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/about" element={<About />} />
         </Routes>

@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test'
+import {BlogPostPage} from './pages/BlogPostPage'
 
 /**
  * Smoke tests that verify the deployed site loads correctly and all
@@ -62,7 +63,7 @@ test.describe('Base Path Smoke Tests', () => {
   })
 
   test('sub-pages load successfully', async ({page}) => {
-    const paths = ['/about', '/projects', '/blog']
+    const paths = ['/about', '/projects', '/blog', '/blog/welcome-to-the-blog']
 
     for (const path of paths) {
       const response = await page.goto(path)
@@ -72,6 +73,25 @@ test.describe('Base Path Smoke Tests', () => {
       const rootElement = page.locator('#root')
       await expect(rootElement, `${path} should render content`).toBeVisible()
     }
+  })
+
+  test('direct load of a prerendered post renders content without SPA redirect', async ({page}) => {
+    const blogPostPage = new BlogPostPage(page)
+    const response = await page.goto('/blog/welcome-to-the-blog')
+    expect(response?.status()).toBeLessThan(400)
+    await page.waitForLoadState('networkidle')
+
+    await expect(blogPostPage.title).toHaveText('Welcome to the Blog')
+    await expect(blogPostPage.body).toBeVisible()
+  })
+
+  test('direct load of an unknown slug falls back to the not-found state', async ({page}) => {
+    const response = await page.goto('/blog/this-slug-does-not-exist')
+    expect(response?.status()).toBeLessThan(400)
+    await page.waitForLoadState('networkidle')
+
+    await expect(page.locator('.blog-post-page--not-found h1')).toHaveText('Post not found')
+    await expect(page.locator('.blog-post-page__back-link')).toBeVisible()
   })
 
   test('navigation links use correct base path', async ({page}) => {

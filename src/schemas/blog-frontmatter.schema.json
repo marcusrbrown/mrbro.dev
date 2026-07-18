@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mrbro.dev/schemas/blog-frontmatter.json",
+  "title": "Blog Post Frontmatter",
+  "description": "JSON schema for validating blog post frontmatter extracted from curated gist Markdown files",
+  "type": "object",
+  "required": ["title", "date", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Post title",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO 8601 date (YYYY-MM-DD) the post was published"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short summary shown on list cards and used for meta descriptions",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "slug": {
+      "type": "string",
+      "description": "Explicit URL slug; falls back to a slugified title when omitted",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "tags": {
+      "type": "array",
+      "description": "Tags for categorizing the post",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      },
+      "maxItems": 20,
+      "uniqueItems": true
+    },
+    "source": {
+      "type": "string",
+      "description": "Markdown file name within the gist to use as the post source, required when the gist has multiple Markdown files",
+      "minLength": 1,
+      "maxLength": 255
+    }
+  }
+}

@@ -4,19 +4,24 @@ import AboutSection from '../components/AboutSection'
 import BlogPost from '../components/BlogPost'
 import ContactCta from '../components/ContactCta'
 import HeroSection from '../components/HeroSection'
-import LoadingState, {BlogPostSkeleton, ProjectCardSkeleton} from '../components/LoadingStates'
+import LoadingState, {ProjectCardSkeleton} from '../components/LoadingStates'
 import ProjectGallery from '../components/ProjectGallery'
 import ProjectPreviewModal from '../components/ProjectPreviewModal'
 import SkillsShowcase from '../components/SkillsShowcase'
 import SmoothScrollNav from '../components/SmoothScrollNav'
 import {useErrorTracking, useProjectTracking, useSectionTracking} from '../hooks/UseAnalytics'
+import {useBlogPosts} from '../hooks/UseBlogPosts'
 import {useGitHub} from '../hooks/UseGitHub'
 import {usePageTitle} from '../hooks/UsePageTitle'
 import '../styles/landing-page.css'
 
+const HOME_BLOG_PREVIEW_COUNT = 3
+
 const Home: React.FC = () => {
   usePageTitle('Home')
-  const {projects, blogPosts, projectsLoading, projectsError, blogLoading, blogError} = useGitHub()
+  const {projects, loading, error} = useGitHub()
+  const {posts: blogPosts} = useBlogPosts()
+  const blogPreview = blogPosts.slice(0, HOME_BLOG_PREVIEW_COUNT)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -28,8 +33,6 @@ const Home: React.FC = () => {
   const aboutRef = useSectionTracking<HTMLDivElement>('about')
   const projectsRef = useSectionTracking<HTMLElement>('projects')
   const blogRef = useSectionTracking<HTMLElement>('blog')
-  const projectSkeletonKeys = ['project-1', 'project-2', 'project-3', 'project-4', 'project-5', 'project-6']
-  const blogSkeletonKeys = ['blog-1', 'blog-2', 'blog-3']
 
   const handleProjectPreview = (project: Project) => {
     trackProjectClick(project.id, 'gallery')
@@ -55,25 +58,14 @@ const Home: React.FC = () => {
   }
 
   // Track errors from GitHub API
-  if (projectsError) {
-    trackError(`GitHub API Error: ${projectsError}`, 'useGitHub')
-  }
-  if (blogError) {
-    trackError(`GitHub API Error: ${blogError}`, 'useGitHub')
+  if (error) {
+    trackError(`GitHub API Error: ${error}`, 'useGitHub')
   }
 
   const projectsSkeleton = (
     <div className="project-list">
-      {projectSkeletonKeys.map(key => (
-        <ProjectCardSkeleton key={key} />
-      ))}
-    </div>
-  )
-
-  const blogPostsSkeleton = (
-    <div className="blog-list">
-      {blogSkeletonKeys.map(key => (
-        <BlogPostSkeleton key={key} />
+      {Array.from({length: 6}).map((_, index) => (
+        <ProjectCardSkeleton key={`project-skeleton-${index}`} />
       ))}
     </div>
   )
@@ -98,11 +90,7 @@ const Home: React.FC = () => {
       {/* Featured Projects Section */}
       <section id="projects" className="projects-section" ref={projectsRef}>
         <div className="container">
-          <LoadingState
-            loading={projectsLoading}
-            error={projectsError && projects.length === 0 ? projectsError : null}
-            skeleton={projectsSkeleton}
-          >
+          <LoadingState loading={loading} error={error} skeleton={projectsSkeleton}>
             <ProjectGallery
               projects={projects}
               title="Featured Projects"
@@ -116,25 +104,21 @@ const Home: React.FC = () => {
       </section>
 
       {/* Latest Blog Posts Section */}
-      <section id="blog" className="blog-section" ref={blogRef}>
-        <div className="container">
-          <header className="section-header">
-            <h2 className="section-title">Latest Blog Posts</h2>
-            <p className="section-subtitle">Thoughts on web development, best practices, and emerging technologies</p>
-          </header>
-          <LoadingState
-            loading={blogLoading}
-            error={blogError && blogPosts.length === 0 ? blogError : null}
-            skeleton={blogPostsSkeleton}
-          >
+      {blogPreview.length > 0 && (
+        <section id="blog" className="blog-section" ref={blogRef}>
+          <div className="container">
+            <header className="section-header">
+              <h2 className="section-title">Latest Blog Posts</h2>
+              <p className="section-subtitle">Thoughts on web development, best practices, and emerging technologies</p>
+            </header>
             <div className="blog-list">
-              {blogPosts.map(post => (
-                <BlogPost key={post.id} {...post} />
+              {blogPreview.map(post => (
+                <BlogPost key={post.slug} {...post} />
               ))}
             </div>
-          </LoadingState>
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* Contact CTA Section */}
       <ContactCta />

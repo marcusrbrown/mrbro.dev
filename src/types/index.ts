@@ -11,12 +11,46 @@ export interface Project {
   imageUrl?: string
 }
 
-export interface BlogPost {
-  id: string
+/** Curated blog post frontmatter, validated against `blog-frontmatter.schema.json`. */
+export interface BlogFrontmatter {
   title: string
-  summary: string
   date: string
-  url: string
+  summary: string
+  slug?: string
+  tags?: string[]
+  /** Markdown file name to use as the post source when a gist has multiple. */
+  source?: string
+}
+
+/** Card-facing subset of a blog post, used for list views and previews. */
+export interface BlogPostMeta {
+  slug: string
+  title: string
+  date: string
+  summary: string
+  tags?: string[]
+}
+
+/** Full blog post content, as stored in the committed snapshot. */
+export interface BlogPostFull {
+  slug: string
+  frontmatter: BlogFrontmatter
+  /** Sanitized, rendered HTML body. */
+  html: string
+  /** Gist ID; keys the slug registry so slugs remain stable across title edits. */
+  gistId: string
+  gistUrl: string
+  gistUpdatedAt: string
+  /** Markdown filename selected from the source gist. */
+  sourceFilename?: string
+}
+
+/** Committed blog content snapshot; the refresh workflow is the sole writer. */
+export interface BlogSnapshot {
+  posts: BlogPostFull[]
+  generatedAt: string
+  /** Marker identifying the generator, e.g. `blog-refresh` script + version. */
+  generator: string
 }
 
 export interface GitHubRepository {
@@ -30,25 +64,6 @@ export interface GitHubRepository {
   stargazers_count: number
   topics: string[]
   updated_at: string
-}
-
-export interface GitHubLabel {
-  id: number
-  name: string
-  color: string
-  description: string | null
-}
-
-export interface GitHubIssue {
-  id: number
-  number: number
-  title: string
-  body: string | null
-  html_url: string
-  created_at: string
-  updated_at: string
-  labels: GitHubLabel[]
-  state: 'open' | 'closed'
 }
 
 // Re-export theme types from dedicated theme types file

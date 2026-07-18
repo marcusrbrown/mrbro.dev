@@ -62,6 +62,11 @@ jobs:
 
       - name: Build project
         run: pnpm run build
+        env:
+          # E2E fixture mechanism: use the committed fixture snapshot so E2E/a11y/visual
+          # suites run against deterministic content instead of the (currently empty)
+          # production snapshot. See docs/plans/2026-07-17-001-feat-first-party-blog-plan.md.
+          BLOG_SNAPSHOT: tests/fixtures/blog-snapshot.json
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

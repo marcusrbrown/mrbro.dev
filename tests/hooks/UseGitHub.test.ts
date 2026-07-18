@@ -51,17 +51,6 @@ const mockRepos = [
   },
 ]
 
-const mockGists = [
-  {
-    id: 'gist1',
-    description: 'A useful gist',
-    html_url: 'https://gist.github.com/user/gist1',
-    created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-06-01T00:00:00Z',
-    public: true,
-  },
-]
-
 const jsonResponse = (body: unknown, init: Partial<{status: number; headers: Record<string, string>}> = {}) =>
   ({
     ok: (init.status ?? 200) < 400,
@@ -98,13 +87,10 @@ describe('useGitHub', () => {
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
     expect(result.current.repos).toEqual([])
     expect(result.current.projects).toEqual([])
-    expect(result.current.blogPosts).toEqual([])
   })
 
-  it('should fetch repos and gists on mount and set loading false', async () => {
-    const fetchMock = vi.fn((url: string) =>
-      Promise.resolve(url.includes('/gists') ? jsonResponse(mockGists) : jsonResponse(mockRepos)),
-    )
+  it('should fetch repos on mount and set loading false', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse(mockRepos)))
     vi.stubGlobal('fetch', fetchMock)
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
@@ -120,10 +106,7 @@ describe('useGitHub', () => {
   })
 
   it('should filter out forked and archived repos', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValueOnce(jsonResponse(mockRepos)).mockResolvedValueOnce(jsonResponse([])),
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(mockRepos)))
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
 
@@ -134,10 +117,7 @@ describe('useGitHub', () => {
   })
 
   it('should transform repos into Project objects', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValueOnce(jsonResponse(mockRepos)).mockResolvedValueOnce(jsonResponse([])),
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse(mockRepos)))
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
 
@@ -150,40 +130,9 @@ describe('useGitHub', () => {
     expect(project?.stars).toBe(42)
   })
 
-  it('should transform gists into BlogPost objects', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValueOnce(jsonResponse([])).mockResolvedValueOnce(jsonResponse(mockGists)),
-    )
-
-    const {result} = renderHook(() => useGitHub(uniqueUsername()))
-
-    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
-
-    expect(result.current.blogPosts).toHaveLength(1)
-    expect(result.current.blogPosts[0]?.title).toBe('A useful gist')
-  })
-
-  it('should handle gist with no description', async () => {
-    const noDescGist = {...mockGists[0], description: ''}
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse([]))
-        .mockResolvedValueOnce(jsonResponse([noDescGist])),
-    )
-
-    const {result} = renderHook(() => useGitHub(uniqueUsername()))
-
-    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
-
-    expect(result.current.blogPosts[0]?.title).toBe('Untitled')
-  })
-
   it('should accept a custom username', async () => {
     const username = uniqueUsername()
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse([])).mockResolvedValueOnce(jsonResponse([]))
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse([]))
     vi.stubGlobal('fetch', fetchMock)
 
     renderHook(() => useGitHub(username))
@@ -195,13 +144,7 @@ describe('useGitHub', () => {
 
   it('should handle repos with no topics', async () => {
     const repoNoTopics = {...mockRepos[0], topics: undefined as unknown as string[]}
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse([repoNoTopics]))
-        .mockResolvedValueOnce(jsonResponse([])),
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([repoNoTopics])))
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
 
@@ -212,13 +155,7 @@ describe('useGitHub', () => {
 
   it('should handle repos with no language', async () => {
     const repoNoLang = {...mockRepos[0], language: null}
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse([repoNoLang]))
-        .mockResolvedValueOnce(jsonResponse([])),
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([repoNoLang])))
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
 
@@ -231,14 +168,12 @@ describe('useGitHub', () => {
     const resetSeconds = Math.floor(Date.now() / 1000) + 60
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string) =>
+      vi.fn(() =>
         Promise.resolve(
-          url.includes('/gists')
-            ? jsonResponse(mockGists)
-            : jsonResponse(
-                {message: 'API rate limit exceeded'},
-                {status: 403, headers: {'X-RateLimit-Reset': String(resetSeconds)}},
-              ),
+          jsonResponse(
+            {message: 'API rate limit exceeded'},
+            {status: 403, headers: {'X-RateLimit-Reset': String(resetSeconds)}},
+          ),
         ),
       ),
     )
@@ -249,26 +184,18 @@ describe('useGitHub', () => {
 
     expect(result.current.projectsError).toMatch(/rate limit/i)
     expect(result.current.rateLimitReset).toBeInstanceOf(Date)
-    // Blog feed succeeded independently of the repo failure.
-    await waitFor(() => expect(result.current.blogLoading).toBe(false), {timeout: 3000})
-    expect(result.current.blogError).toBeNull()
-    expect(result.current.blogPosts).toHaveLength(1)
   })
 
   it('should handle malformed JSON responses', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string) =>
-        Promise.resolve(
-          url.includes('/gists')
-            ? jsonResponse([])
-            : {
-                ok: true,
-                status: 200,
-                headers: new Headers(),
-                json: () => Promise.reject(new Error('Unexpected token')),
-              },
-        ),
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: new Headers(),
+          json: () => Promise.reject(new Error('Unexpected token')),
+        }),
       ),
     )
 
@@ -282,9 +209,7 @@ describe('useGitHub', () => {
   it('should reject payloads with the wrong shape', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn((url: string) =>
-        Promise.resolve(url.includes('/gists') ? jsonResponse([]) : jsonResponse([{id: 'not-a-number', name: 123}])),
-      ),
+      vi.fn(() => Promise.resolve(jsonResponse([{id: 'not-a-number', name: 123}]))),
     )
 
     const {result} = renderHook(() => useGitHub(uniqueUsername()))
@@ -295,29 +220,9 @@ describe('useGitHub', () => {
     expect(result.current.repos).toEqual([])
   })
 
-  it('should keep repo and gist errors independent (partial failure)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) =>
-        url.includes('/gists') ? Promise.reject(new Error('network error')) : Promise.resolve(jsonResponse(mockRepos)),
-      ),
-    )
-
-    const {result} = renderHook(() => useGitHub(uniqueUsername()))
-
-    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
-
-    expect(result.current.projectsError).toBeNull()
-    expect(result.current.projects.length).toBeGreaterThan(0)
-    expect(result.current.blogError).toMatch(/network error/i)
-  })
-
   it('should reuse cached results across remounts without refetching', async () => {
     const username = uniqueUsername()
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(mockRepos))
-      .mockResolvedValueOnce(jsonResponse(mockGists))
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(mockRepos))
     vi.stubGlobal('fetch', fetchMock)
 
     const {result: first, unmount} = renderHook(() => useGitHub(username))
@@ -331,7 +236,6 @@ describe('useGitHub', () => {
 
     expect(fetchMock.mock.calls.length).toBe(callsAfterFirstMount)
     expect(second.current.repos).toHaveLength(mockRepos.length)
-    expect(second.current.blogPosts).toHaveLength(mockGists.length)
   })
 
   it('should refetch after the cache TTL expires instead of reusing a settled inflight request', async () => {
@@ -339,43 +243,34 @@ describe('useGitHub', () => {
     const nowSpy = vi.spyOn(Date, 'now')
     nowSpy.mockReturnValue(1_000_000)
 
-    const fetchMock = vi.fn((url: string) =>
-      Promise.resolve(url.includes('/gists') ? jsonResponse(mockGists) : jsonResponse(mockRepos)),
-    )
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse(mockRepos)))
     vi.stubGlobal('fetch', fetchMock)
 
     const {result: first, unmount} = renderHook(() => useGitHub(username))
     await waitFor(() => expect(first.current.loading).toBe(false), {timeout: 3000})
     unmount()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
 
     nowSpy.mockReturnValue(1_000_000 + 300_001)
 
     const {result: second} = renderHook(() => useGitHub(username))
     await waitFor(() => expect(second.current.loading).toBe(false), {timeout: 3000})
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(second.current.repos).toHaveLength(mockRepos.length)
-    expect(second.current.blogPosts).toHaveLength(mockGists.length)
   })
 
   it('should keep shared in-flight requests alive when the creating hook unmounts', async () => {
     const username = uniqueUsername()
     let resolveRepos: ((value: Response | PromiseLike<Response>) => void) | undefined
-    let resolveGists: ((value: Response | PromiseLike<Response>) => void) | undefined
 
-    const fetchMock = vi.fn((url: string) => {
-      if (url.includes('/repos')) {
-        return new Promise(resolve => {
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>(resolve => {
           resolveRepos = resolve
-        })
-      }
-
-      return new Promise(resolve => {
-        resolveGists = resolve
-      })
-    })
+        }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const first = renderHook(() => useGitHub(username))
@@ -384,38 +279,29 @@ describe('useGitHub', () => {
     first.unmount()
 
     resolveRepos?.(jsonResponse(mockRepos))
-    resolveGists?.(jsonResponse(mockGists))
 
     await waitFor(() => expect(second.result.current.loading).toBe(false), {timeout: 3000})
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(second.result.current.projects).toHaveLength(1)
-    expect(second.result.current.blogPosts).toHaveLength(1)
   })
 
   it('should not abort shared in-flight requests when one consumer retries', async () => {
     const username = uniqueUsername()
-    const aborted = {repos: false, gists: false}
+    let aborted = false
     let resolveRepos: ((value: Response | PromiseLike<Response>) => void) | undefined
-    let resolveGists: ((value: Response | PromiseLike<Response>) => void) | undefined
 
-    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-      const requestKey = url.includes('/repos') ? 'repos' : 'gists'
+    const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
       return new Promise<Response>((resolve, reject) => {
         init?.signal?.addEventListener(
           'abort',
           () => {
-            aborted[requestKey] = true
+            aborted = true
             reject(new DOMException('The operation was aborted.', 'AbortError'))
           },
           {once: true},
         )
-
-        if (requestKey === 'repos') {
-          resolveRepos = resolve
-        } else {
-          resolveGists = resolve
-        }
+        resolveRepos = resolve
       })
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -423,18 +309,16 @@ describe('useGitHub', () => {
     const first = renderHook(() => useGitHub(username))
     const second = renderHook(() => useGitHub(username))
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2), {timeout: 3000})
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1), {timeout: 3000})
 
     act(() => {
       first.result.current.retry()
     })
 
-    expect(aborted.repos).toBe(false)
-    expect(aborted.gists).toBe(false)
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(aborted).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
 
     resolveRepos?.(jsonResponse(mockRepos))
-    resolveGists?.(jsonResponse(mockGists))
 
     await waitFor(() => expect(second.result.current.loading).toBe(false), {timeout: 3000})
 
@@ -442,7 +326,6 @@ describe('useGitHub', () => {
     expect(first.result.current.error).toBeNull()
     expect(second.result.current.error).toBeNull()
     expect(second.result.current.projects).toHaveLength(1)
-    expect(second.result.current.blogPosts).toHaveLength(1)
   })
 
   it('should refetch when retry is invoked', async () => {
@@ -450,9 +333,7 @@ describe('useGitHub', () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(mockRepos))
-      .mockResolvedValueOnce(jsonResponse(mockGists))
       .mockResolvedValueOnce(jsonResponse(mockRepos))
-      .mockResolvedValueOnce(jsonResponse(mockGists))
     vi.stubGlobal('fetch', fetchMock)
 
     const {result} = renderHook(() => useGitHub(username))
@@ -470,13 +351,10 @@ describe('useGitHub', () => {
   it('should not update state with a stale response after unmount (cancellation)', async () => {
     const username = uniqueUsername()
     let resolveRepos: ((value: unknown) => void) | undefined
-    const fetchMock = vi.fn().mockImplementation((url: string) => {
-      if (url.includes('/repos')) {
-        return new Promise(resolve => {
-          resolveRepos = resolve
-        })
-      }
-      return Promise.resolve(jsonResponse([]))
+    const fetchMock = vi.fn().mockImplementation(() => {
+      return new Promise(resolve => {
+        resolveRepos = resolve
+      })
     })
     vi.stubGlobal('fetch', fetchMock)
 
