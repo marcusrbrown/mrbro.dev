@@ -1,5 +1,6 @@
 import type {Project} from '../types'
 import {useCallback, useEffect, useState} from 'react'
+import {previewImagePath} from '../utils/preview-image-path'
 
 interface GitHubRepo {
   id: number
@@ -288,7 +289,7 @@ const transformReposToProjects = (repos: GitHubRepo[]): Project[] =>
       homepage: repo.homepage,
       topics: repo.topics || [],
       lastUpdated: repo.updated_at,
-      imageUrl: undefined,
+      imageUrl: previewImagePath(repo.id),
     }))
 
 export const useGitHub = (username = 'marcusrbrown'): UseGitHubReturn => {

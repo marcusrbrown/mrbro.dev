@@ -272,6 +272,27 @@ describe('useGitHub', () => {
     expect(result.current.projects[0]?.topics).toEqual(['portfolio'])
   })
 
+  it('should set imageUrl to the deterministic preview path for a portfolio repo with a numeric id', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([mockRepos[0]])))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects[0]?.imageUrl).toBe(`/project-previews/${mockRepos[0]?.id}.png`)
+  })
+
+  it('should leave imageUrl undefined for a repo with an invalid id', async () => {
+    const repoInvalidId = {...mockRepos[0], id: 0}
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([repoInvalidId])))
+
+    const {result} = renderHook(() => useGitHub(uniqueUsername()))
+
+    await waitFor(() => expect(result.current.loading).toBe(false), {timeout: 3000})
+
+    expect(result.current.projects[0]?.imageUrl).toBeUndefined()
+  })
+
   it('should handle repos with no language', async () => {
     const repoNoLang = {...mockRepos[0], language: null}
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(jsonResponse([repoNoLang])))
