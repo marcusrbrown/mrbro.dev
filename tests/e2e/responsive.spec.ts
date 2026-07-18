@@ -207,6 +207,29 @@ test.describe('Responsive Design Tests', () => {
       }
     })
 
+    test('should keep hero CTA buttons within horizontal bounds on mobile without overflowing', async ({page}) => {
+      const homePage = new HomePage(page)
+
+      // Set to mobile viewport
+      const viewportWidth = 375
+      await page.setViewportSize({width: viewportWidth, height: 667})
+      await homePage.goto()
+      await homePage.waitForLoad()
+
+      const ctaButtons = await page.locator('.hero-cta-button').all()
+      expect(ctaButtons.length).toBeGreaterThan(0)
+
+      for (const button of ctaButtons) {
+        const box = await button.boundingBox()
+        expect(box).not.toBeNull()
+        if (box) {
+          // Check that the button is entirely within horizontal bounds
+          expect(box.x).toBeGreaterThanOrEqual(0)
+          expect(box.x + box.width).toBeLessThanOrEqual(viewportWidth)
+        }
+      }
+    })
+
     test('should handle hover states appropriately', async ({page, isMobile}) => {
       const homePage = new HomePage(page)
       await homePage.goto()
