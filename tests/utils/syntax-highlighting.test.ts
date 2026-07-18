@@ -1,5 +1,6 @@
 // mrbro.dev/tests/utils/syntax-highlighting.test.ts
 
+import type {BundledLanguage} from 'shiki'
 import {afterEach, describe, expect, it} from 'vitest'
 import {
   cleanupHighlighter,
@@ -57,7 +58,7 @@ describe('syntax-highlighting utilities', () => {
 
     it('should fall back to plain code block for unsupported languages', async () => {
       const code = 'console.log("test")'
-      const result = await highlightCode(code, 'unsupported-language' as any)
+      const result = await highlightCode(code, 'unsupported-language' as BundledLanguage)
 
       // Should fall back to plain code block
       expect(result).toContain('<pre><code>')

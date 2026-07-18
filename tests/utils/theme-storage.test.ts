@@ -1,4 +1,4 @@
-import type {Theme} from '../../src/types'
+import type {Theme, ThemeMode} from '../../src/types'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {
   clearSavedThemes,
@@ -85,7 +85,7 @@ describe('theme-storage', () => {
       })
 
       it('should reject invalid theme mode', () => {
-        const result = saveThemeMode('invalid' as any)
+        const result = saveThemeMode('invalid' as ThemeMode)
 
         expect(result).toBe(false)
         expect(consoleMock.warn).toHaveBeenCalledWith('Invalid theme mode provided:', 'invalid')
@@ -199,7 +199,7 @@ describe('theme-storage', () => {
       })
 
       it('should reject theme with missing id', () => {
-        const invalidTheme = {...validTheme, id: undefined} as any
+        const invalidTheme = {...validTheme, id: undefined} as unknown as Theme
 
         const result = saveCustomTheme(invalidTheme)
 
@@ -208,7 +208,7 @@ describe('theme-storage', () => {
       })
 
       it('should reject theme with invalid mode', () => {
-        const invalidTheme = {...validTheme, mode: 'system'} as any
+        const invalidTheme = {...validTheme, mode: 'system'} as unknown as Theme
 
         const result = saveCustomTheme(invalidTheme)
 
@@ -219,7 +219,7 @@ describe('theme-storage', () => {
         const invalidTheme = {
           ...validTheme,
           colors: {...validTheme.colors, primary: undefined},
-        } as any
+        } as unknown as Theme
 
         const result = saveCustomTheme(invalidTheme)
 
@@ -227,7 +227,7 @@ describe('theme-storage', () => {
       })
 
       it('should reject non-object input', () => {
-        const result = saveCustomTheme('not-a-theme' as any)
+        const result = saveCustomTheme('not-a-theme' as unknown as Theme)
 
         expect(result).toBe(false)
       })

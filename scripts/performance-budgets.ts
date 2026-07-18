@@ -24,6 +24,25 @@ interface BudgetWarning {
   message: string
 }
 
+interface LighthouseResult {
+  url: string
+  configSettings?: {
+    emulatedFormFactor?: string
+  }
+  categories: {
+    performance: {
+      score: number
+    }
+  }
+  audits: Record<
+    string,
+    | {
+        numericValue?: number
+      }
+    | undefined
+  >
+}
+
 /**
  * Performance budget validator
  */
@@ -170,7 +189,7 @@ class PerformanceBudgetValidator {
   /**
    * Validate individual Lighthouse result
    */
-  async validateLighthouseResult(result: any): Promise<void> {
+  async validateLighthouseResult(result: LighthouseResult): Promise<void> {
     const url = new URL(result.url).pathname
     const isDesktop = result.configSettings?.emulatedFormFactor === 'desktop'
     const thresholds = isDesktop ? this.config.coreWebVitals.desktop : this.config.coreWebVitals.mobile

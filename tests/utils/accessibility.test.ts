@@ -326,7 +326,7 @@ describe('accessibility utilities', () => {
 
     it('should return false when matchMedia is not available', () => {
       const originalMatchMedia = window.matchMedia
-      ;(window as any).matchMedia = undefined
+      ;(window as {matchMedia?: unknown}).matchMedia = undefined
 
       expect(prefersReducedMotion()).toBe(false)
 
@@ -361,7 +361,7 @@ describe('accessibility utilities', () => {
 
     it('should return no-op cleanup when matchMedia not available', () => {
       const originalMatchMedia = window.matchMedia
-      ;(window as any).matchMedia = undefined
+      ;(window as {matchMedia?: unknown}).matchMedia = undefined
 
       const cleanup = onReducedMotionChange(vi.fn())
       expect(typeof cleanup).toBe('function')
