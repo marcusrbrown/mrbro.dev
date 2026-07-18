@@ -192,8 +192,11 @@ env:
     - fro-bot
 
     1. ERRORED PRs
-       Find open PRs with failing CI checks. Skip dependency update PRs here;
-       Renovate owns routine dependency/version bumps.
+       Find open PRs with failing CI checks. Do not repair routine
+       dependency-update PRs here — Renovate owns version bumps. But if a
+       failing dependency PR remediates a security advisory (identify from PR
+       labels/title/metadata only; do not query security-alert data), log it
+       under "Needs Human Attention" instead of skipping it silently.
        Only fix PRs whose head branch is in this repository, writable by
        this token, and authored by a trusted source (repository
        owner/collaborator with write access, or an approved automation bot
