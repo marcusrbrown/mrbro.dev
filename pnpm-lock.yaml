@@ -40,7 +40,7 @@ importers:
         specifier: 0.51.1
         version: 0.51.1(d7f9bec97106d1123d806b0b691557b6)
       '@bfra.me/prettier-config':
-        specifier: ^0.16.8
+        specifier: 0.16.8
         version: 0.16.8(prettier@3.8.3)
       '@bfra.me/tsconfig':
         specifier: 0.13.1
