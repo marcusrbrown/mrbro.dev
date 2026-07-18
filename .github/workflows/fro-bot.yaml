@@ -134,7 +134,7 @@ env:
 
     Sections (in order):
     - Summary metrics (issues opened since last run, currently open PRs, stale
-      issues/PRs count, main branch check status, security alerts if accessible)
+      issues/PRs count, main branch check status)
     - Stale issues (no activity >30 days; recommend next step)
     - Stale PRs (no activity >7 days; stale >14 days)
     - Unassigned bugs (label bug, no assignee)
@@ -147,9 +147,9 @@ env:
       has passed; flag stale tech-stack claims; flag "coming soon" markers
       older than 90 days)
     - Cross-project intelligence (check marcusrbrown/tokentoilet and
-      marcusrbrown/vbs for similar maintenance items, security advisories,
-      or convention improvements that could benefit mrbro.dev; include only if
-      relevant findings exist)
+      marcusrbrown/vbs for similar maintenance items, or convention
+      improvements that could benefit mrbro.dev; include only if relevant
+      findings exist)
     - Recommended actions (bulleted checklist)
     - Notes (use "data unavailable" for any inaccessible data source)
 
@@ -181,12 +181,8 @@ env:
 
     DEPENDENCY OWNERSHIP
     Renovate owns routine dependency/version bumps (configured via
-    marcusrbrown/renovate-config preset). You may change dependency versions
-    only when remediating a confirmed security advisory (critical/high) or
-    repairing an existing security-update PR. Do not create non-security
-    version-bump PRs, and do not batch unrelated dependency changes into a
-    security fix. Do NOT modify package.json versions outside category 2
-    security remediation.
+    marcusrbrown/renovate-config preset). Do not create dependency version-bump
+    PRs.
 
     TRUSTED AUTHORS
     Trusted PR authors for branch repair are Marcus and these automation bots:
@@ -196,8 +192,8 @@ env:
     - fro-bot
 
     1. ERRORED PRs
-       Find open PRs with failing CI checks. Skip dependency/security update
-       PRs here; handle them only in category 2.
+       Find open PRs with failing CI checks. Skip dependency update PRs here;
+       Renovate owns routine dependency/version bumps.
        Only fix PRs whose head branch is in this repository, writable by
        this token, and authored by a trusted source (repository
        owner/collaborator with write access, or an approved automation bot
@@ -218,18 +214,7 @@ env:
           an errored PR. If the failing run appears caused by the Fro Bot
           workflow, skip the PR and log it under "Needs Human Attention".
 
-    2. SECURITY
-       Review Dependabot/Renovate alerts and open PRs for vulnerable deps.
-       - If a security update PR exists but has conflicts or failures,
-         fix and push to that PR branch.
-       - For unaddressed critical/high advisories with no existing PR,
-         create a new PR with the remediation.
-       - Do NOT bulk-update unrelated deps in a security PR.
-       If security advisory/alert data is unavailable to the token or CLI,
-       skip this category and note "security alerts unavailable" under
-       "Needs Human Attention". Do not guess.
-
-    3. CODE QUALITY & REPO HYGIENE
+    2. CODE QUALITY & REPO HYGIENE
        This category is primarily report-only. Focus on things only a
        code-aware agent can catch:
        - Run `pnpm build` and `pnpm run analyze-build`. Use the analysis
@@ -248,22 +233,22 @@ env:
        - Verify convention compliance: hook files in src/hooks/ use
          PascalCase, no barrel exports outside src/types/index.ts, no
          CommonJS require() calls, no `any` type annotations/assertions.
-         Report findings but put actual code fixes into category 4.
+         Report findings but put actual code fixes into category 3.
        - Check that AGENTS.md accurately reflects the current directory
          structure and file counts. If drift is found, open a PR with
          corrections.
 
-    4. DEVELOPER EXPERIENCE
+    3. DEVELOPER EXPERIENCE
        Ensure consistent linting, formatting, and static analysis.
        Run `pnpm lint`; run `pnpm exec tsc --noEmit` only if type-checking
-       is not already covered by the build in category 3. Fix any failures,
-       including convention violations found in category 3.
+       is not already covered by the build in category 2. Fix any failures,
+       including convention violations found in category 2.
        Open a PR for all fixes — never commit directly to the default
        branch. Group related lint/format/convention fixes into a single PR.
        Use a clear conventional-commit title like
        `chore(lint): apply auto-fixes from autohealing run`.
 
-    5. PRODUCTION SITE REVIEW
+    4. PRODUCTION SITE REVIEW
        Use `npx agent-browser` to review the live site at https://mrbro.dev.
        Check each page: /, /about, /projects, /blog.
 
@@ -312,7 +297,7 @@ env:
        "Needs Human Attention" in the summary. Do not fail the workflow.
        Close the browser when done: `npx agent-browser close`.
 
-    6. QUALITY GATES VERIFICATION
+    5. QUALITY GATES VERIFICATION
        Verify the project's quality gates pass on the default branch:
        a. `pnpm lint` — 0 errors
        b. `pnpm exec tsc --noEmit` — type check passes
@@ -322,11 +307,11 @@ env:
 
        For each failing gate:
        - Identify the root cause from command output.
-       - If the fix is minimal and safe, include it in a category 4 PR.
+       - If the fix is minimal and safe, include it in a category 3 PR.
        - If the fix is complex, open an issue with diagnosis and
          recommended approach.
 
-    7. CROSS-PROJECT INTELLIGENCE (INBOUND ONLY)
+    6. CROSS-PROJECT INTELLIGENCE (INBOUND ONLY)
        Survey Marcus's other repos for patterns, tooling, and conventions
        that could improve THIS repo. The goal is inbound intelligence —
        what can we learn from the portfolio to make mrbro.dev better?
@@ -359,7 +344,7 @@ env:
        Keep findings actionable and specific to mrbro.dev. Skip repos
        with nothing notable.
 
-    8. UPSTREAM MODERNIZATION WATCH (SUNDAYS UTC ONLY)
+    7. UPSTREAM MODERNIZATION WATCH (SUNDAYS UTC ONLY)
        On Sundays UTC, review release notes for pinned upstreams:
        - `fro-bot/agent` used by .github/workflows/fro-bot.yaml
        - `actions/checkout` used by .github/workflows/fro-bot.yaml
@@ -374,7 +359,7 @@ env:
 
        Cadence: this category runs only when the IS_SUNDAY_UTC environment
        variable is 'true' (Sunday UTC, as detected by the workflow's
-       preflight). Before doing any category 8 work, read this variable.
+       preflight). Before doing any category 7 work, read this variable.
        On other days, skip entirely and omit the corresponding section
        from the daily summary.
 
@@ -405,11 +390,6 @@ env:
     | PR | Failure | Fix | Status |
     | --- | --- | --- | --- |
     | #N | [root cause] | [what was fixed] | ✅ Fixed / ⚠️ Needs review / ⏭️ Skipped |
-
-    ### Security
-    | Advisory / PR | Severity | Action Taken |
-    | --- | --- | --- |
-    | [advisory or #N] | Critical/High/Medium | [fix pushed / PR created / skipped / unavailable] |
 
     ### Code Quality & Repo Hygiene
     | Check | Result | Action |
@@ -468,7 +448,7 @@ env:
     - Never force-push, rewrite history, or delete branches.
     - Never push directly to the default branch. Direct pushes are allowed
       only to an existing non-default PR branch you are repairing under
-      category 1 or category 2.
+      category 1.
     - Never merge PRs, submit reviews/approvals, close/reopen PRs or
       issues, or modify branch protection, EXCEPT for closing duplicate
       "Daily Autohealing Report" issues as described in the perpetual issue
@@ -481,8 +461,8 @@ env:
       rules, or editing workflows/configuration only to suppress failures.
     - If the smallest safe fix would weaken a guardrail or reduce
       validation, skip it and log it under "Needs Human Attention".
-    - Cross-project intelligence (category 7) MUST NOT modify other repos.
-    - Upstream modernization watch (category 8) MUST NOT bump pinned
+    - Cross-project intelligence (category 6) MUST NOT modify other repos.
+    - Upstream modernization watch (category 7) MUST NOT bump pinned
       versions (Renovate-owned) or modify upstream repositories.
     - Do not create multiple summary issues.
     - Never edit Marcus's first-person content (README intro, bio, blog
@@ -537,7 +517,7 @@ jobs:
         )
       )
     steps:
-      - name: Detect Sunday UTC for category 8 cadence
+      - name: Detect Sunday UTC for category 7 cadence
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           if [ "$(date -u +%u)" = "7" ]; then
