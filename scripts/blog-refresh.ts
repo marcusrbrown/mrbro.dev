@@ -281,12 +281,20 @@ export const buildSnapshot = async (
   const posts: BlogPostFull[] = []
 
   for (const candidate of candidates) {
+    const wasPublished = previousByGistId.has(candidate.gistId)
     if (!isSafeGistUrl(candidate.gistUrl)) {
+      if (wasPublished) {
+        const previousSlug = previousByGistId.get(candidate.gistId)?.slug ?? candidate.gistId
+        highlighter.dispose()
+        return {
+          snapshot: previousSnapshot,
+          warnings,
+          fatalError: `Previously published post "${previousSlug}" (gist ${candidate.gistId}) is no longer valid: Invalid gist URL: expected an HTTPS GitHub URL`,
+        }
+      }
       warnings.push({gistId: candidate.gistId, reason: 'Invalid gist URL: expected an HTTPS GitHub URL'})
       continue
     }
-
-    const wasPublished = previousByGistId.has(candidate.gistId)
 
     const sourceResult = selectMarkdownSource(candidate.files, previousByGistId.get(candidate.gistId)?.sourceFilename)
     if ('error' in sourceResult) {

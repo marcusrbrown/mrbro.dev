@@ -221,6 +221,39 @@ describe('blog-refresh script', () => {
       expect(result.snapshot).toBe(previousSnapshot)
     })
 
+    it('hard-fails and preserves a previously published post with an invalid gist URL', async () => {
+      const previousPost: BlogPostFull = {
+        slug: 'url-sensitive-post',
+        frontmatter: {title: 'URL Sensitive Post', date: '2026-01-01', summary: 'Sum'},
+        html: '<p>Body</p>',
+        gistId: 'gist-url-invalid',
+        gistUrl: 'https://gist.github.com/gist-url-invalid',
+        gistUpdatedAt: '2026-01-01T00:00:00.000Z',
+      }
+      const previousSnapshot: BlogSnapshot = {
+        posts: [previousPost],
+        generatedAt: '2026-01-01T00:00:00.000Z',
+        generator: GENERATOR,
+      }
+
+      const result = await buildSnapshot(
+        [
+          candidate({
+            gistId: 'gist-url-invalid',
+            gistUrl: 'http://example.com/gist-url-invalid',
+            files: {'post.md': gistFile(validPostMarkdown('URL Sensitive Post', '2026-01-01', 'Sum'))},
+          }),
+        ],
+        previousSnapshot,
+      )
+
+      expect(result.fatalError).toContain('url-sensitive-post')
+      expect(result.fatalError).toContain('gist-url-invalid')
+      expect(result.fatalError).toContain('Invalid gist URL')
+      expect(result.snapshot).toBe(previousSnapshot)
+      expect(result.warnings).toHaveLength(0)
+    })
+
     it('excludes a new candidate with invalid frontmatter, recording a warning, without failing the build', async () => {
       const result = await buildSnapshot(
         [candidate({gistId: 'new-invalid', files: {'post.md': gistFile('---\ntitle: Missing date\n---\n\nBody')}})],
@@ -384,6 +417,64 @@ const x = 1
       const written = JSON.parse(readFileSync(snapshotPath, 'utf8')) as BlogSnapshot
       expect(written.posts).toEqual([])
       expect(written.generator).toBe(GENERATOR)
+    })
+
+    it('hard-fails and preserves a published post when its gist URL becomes invalid', async () => {
+      const previous: BlogSnapshot = {
+        ...emptySnapshot,
+        posts: [
+          {
+            slug: 'published-post',
+            frontmatter: {title: 'Published Post', date: '2026-01-01', summary: 'Sum'},
+            html: '<p>old</p>',
+            gistId: 'published-gist',
+            gistUrl: 'https://gist.github.com/published-gist',
+            gistUpdatedAt: '2026-01-01',
+            sourceFilename: 'post.md',
+          },
+        ],
+      }
+      writeFileSync(snapshotPath, `${JSON.stringify(previous)}\n`)
+      const before = readFileSync(snapshotPath, 'utf8')
+
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            json: async () => [
+              {
+                id: 'published-gist',
+                html_url: 'http://example.com/published-gist',
+                updated_at: '2026-07-01',
+                files: {'post.md': {}},
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+            json: async () => ({
+              id: 'published-gist',
+              html_url: 'http://example.com/published-gist',
+              updated_at: '2026-07-01',
+              files: {'post.md': {content: validPostMarkdown('Published Post', '2026-01-01', 'Sum')}},
+            }),
+          }),
+      )
+
+      await refreshBlogSnapshot({snapshotPath, username: 'marcusrbrown'})
+
+      expect(process.exitCode).toBe(1)
+      process.exitCode = 0
+      expect(readFileSync(snapshotPath, 'utf8')).toBe(before)
+      expect(JSON.parse(readFileSync(snapshotPath, 'utf8'))).toEqual(previous)
     })
 
     it('fetches Markdown content from gist detail rather than trusting list metadata', async () => {
