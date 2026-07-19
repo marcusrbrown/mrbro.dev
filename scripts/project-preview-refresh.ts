@@ -88,10 +88,25 @@ const isSiteRepo = (repo: RefreshRepo): boolean => repo.full_name.toLowerCase() 
 export const isPortfolioRepo = (repo: RefreshRepo): boolean =>
   !repo.fork && !repo.archived && Boolean(repo.description) && isPortfolioTagged(repo) && !isSiteRepo(repo)
 
+const GITHUB_API_ORIGIN = 'https://api.github.com'
+
+/**
+ * Extracts the `rel="next"` URL from a `Link` header, restricted to the
+ * `https://api.github.com` origin. This is a defense-in-depth guard: pagination
+ * must never follow a URL off-origin, since the caller re-fetches it with the
+ * authenticated (token-bearing) headers. A missing, malformed, or off-origin
+ * next URL simply stops pagination rather than throwing.
+ */
 const nextLink = (response: Response): string | null => {
   const link = response.headers?.get('link')
   const match = link?.match(/<([^>]+)>;\s*rel="next"/)
-  return match?.[1] ?? null
+  const candidate = match?.[1]
+  if (!candidate) return null
+  try {
+    return new URL(candidate).origin === GITHUB_API_ORIGIN ? candidate : null
+  } catch {
+    return null
+  }
 }
 
 /** Fetches every page of `GET /users/:username/repos`, following `Link: rel="next"`. */
@@ -234,15 +249,20 @@ const readExistingIds = (outputDir: string): Set<number> => {
 }
 
 /**
- * Publishes a batch of images atomically via a staging directory: writes every
- * image to a staging dir first, then — only on full success — moves the staged
- * files into place, and only AFTER every publish rename has succeeded, removes
- * stale assets (repos no longer in the portfolio set). Publish-before-prune
- * ordering matters: if a rename fails partway through, no asset has been
- * deleted yet, so existing assets are left intact rather than destroyed by a
- * later step that never got its chance to run. Returns the pruned repo ids.
- * Throws (and cleans up the staging dir) on any write/rename failure so a
- * partial publish can never survive.
+ * Publishes a batch of images via a staging directory: writes every image to
+ * the staging dir first, then moves each into place with `renameSync`
+ * (atomic per-file on the same filesystem). Only AFTER every publish rename
+ * has succeeded does it remove stale assets (repos no longer in the
+ * portfolio set) — publish-before-prune ordering means a mid-publish failure
+ * deletes nothing; existing assets are never destroyed. Returns the pruned
+ * repo ids. The staging dir is always cleaned up.
+ *
+ * Honest limitation: this is not an all-or-nothing multi-file transaction. A
+ * `renameSync` failing partway through a multi-image batch (staging is a
+ * sibling of `outputDir` on the same filesystem, so this needs a genuine fs
+ * failure) leaves a mix of previous-and-current images — but every card
+ * still resolves to a valid image (old or new), nothing is deleted, and the
+ * next successful refresh reconciles the set.
  */
 const publishBatch = (outputDir: string, images: Map<number, Buffer>, existingIds: ReadonlySet<number>): number[] => {
   mkdirSync(outputDir, {recursive: true})

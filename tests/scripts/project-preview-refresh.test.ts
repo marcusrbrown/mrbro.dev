@@ -296,6 +296,72 @@ describe('project-preview-refresh script', () => {
       expect(existsSync(join(outputDir, '1.png'))).toBe(true)
     })
 
+    it('follows a same-origin api.github.com next link across pages', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse(
+            repoListingBody([
+              {
+                id: 1,
+                full_name: 'user/repo-1',
+                description: 'desc',
+                fork: false,
+                archived: false,
+                topics: ['portfolio'],
+              },
+            ]),
+            {headers: {link: '<https://api.github.com/user/12345/repos?page=2>; rel="next"'}},
+          ),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse(
+            repoListingBody([
+              {
+                id: 2,
+                full_name: 'user/repo-2',
+                description: 'desc',
+                fork: false,
+                archived: false,
+                topics: ['portfolio'],
+              },
+            ]),
+          ),
+        )
+        .mockResolvedValueOnce(imageResponse())
+        .mockResolvedValueOnce(imageResponse())
+      vi.stubGlobal('fetch', fetchMock)
+
+      await refreshPreviewImages({outputDir, username: 'marcusrbrown', token: undefined})
+
+      expect(process.exitCode).toBe(0)
+      expect(existsSync(join(outputDir, '1.png'))).toBe(true)
+      expect(existsSync(join(outputDir, '2.png'))).toBe(true)
+      // listing page 1 + page 2 + 2 image fetches
+      expect(fetchMock).toHaveBeenCalledTimes(4)
+    })
+
+    it('stops pagination at an off-origin next link and never sends the token off-origin', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(repoListingBody([]), {
+          headers: {link: '<https://evil.example.com/steal?token=1>; rel="next"'},
+        }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+
+      await refreshPreviewImages({outputDir, username: 'marcusrbrown', token: 'secret-token'})
+
+      expect(process.exitCode).toBe(0)
+      // Only the first (same-origin) listing request was made — pagination
+      // stopped rather than following the off-origin next link.
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      const [url] = fetchMock.mock.calls[0] as [string]
+      expect(url).toContain('api.github.com')
+      expect(fetchMock.mock.calls.some((call: unknown[]) => (call[0] as string).includes('evil.example.com'))).toBe(
+        false,
+      )
+    })
+
     it('previously-committed repo fetch failure is fatal, existing files unchanged', async () => {
       mkdirSync(outputDir, {recursive: true})
       writeFileSync(join(outputDir, '1.png'), Buffer.from('old-content'))
