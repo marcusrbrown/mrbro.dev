@@ -131,35 +131,6 @@ test.describe('Theme Switching Performance', () => {
 })
 
 test.describe('Component Rendering Performance', () => {
-  test('Skills showcase animation performance', async ({page}) => {
-    await page.goto('/')
-
-    // Scroll to skills section to trigger animations
-    await page.locator('[data-testid="skills-showcase"]').scrollIntoViewIfNeeded()
-
-    // Measure animation frame rate
-    const animationPerformance = await page.evaluate(async () => {
-      return new Promise<number>(resolve => {
-        let frameCount = 0
-        const startTime = performance.now()
-
-        function countFrames() {
-          frameCount++
-          if (performance.now() - startTime < 1000) {
-            requestAnimationFrame(countFrames)
-          } else {
-            resolve(frameCount)
-          }
-        }
-
-        requestAnimationFrame(countFrames)
-      })
-    })
-
-    // Should maintain at least 30 FPS (30 frames in 1 second)
-    expect(animationPerformance).toBeGreaterThan(30)
-  })
-
   test('Project gallery rendering performance', async ({page}) => {
     await page.goto('/projects')
     await page.waitForLoadState('networkidle')

@@ -1,15 +1,15 @@
 # src/components/
 
-22 React 19+ components — PascalCase `.tsx` files, no barrel exports, direct file imports only.
+18 React 19+ components — PascalCase `.tsx` files, no barrel exports, direct file imports only.
 
 ## Organization
 
-| Domain | Components |
-| --- | --- |
-| **Theme** | `ThemeToggle`, `ThemeCustomizer`, `ThemePreview`, `PresetThemeGallery` |
-| **Content** | `BlogPost`, `ProjectCard`, `CareerTimeline`, `SkillsShowcase`, `AboutSection` |
-| **Layout** | `Header`, `Footer`, `HeroSection`, `BackgroundPattern`, `LoadingStates` |
-| **Interactive** | `ProjectGallery`, `ProjectFilter`, `ProjectPreviewModal`, `SmoothScrollNav`, `TestimonialsCarousel`, `AnimatedCounters`, `CodeBlock`, `ContactCta` |
+| Domain          | Components                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| **Theme**       | `ThemeToggle`, `ThemeCustomizer`, `ThemePreview`, `PresetThemeGallery`                   |
+| **Content**     | `BlogPost`, `ProjectCard`, `AboutSection`                                                |
+| **Layout**      | `Header`, `Footer`, `HeroSection`, `BackgroundPattern`, `LoadingStates`                  |
+| **Interactive** | `ProjectGallery`, `ProjectFilter`, `ProjectPreviewModal`, `SmoothScrollNav`, `CodeBlock` |
 
 ## Patterns
 

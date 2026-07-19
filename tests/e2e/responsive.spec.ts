@@ -118,26 +118,6 @@ test.describe('Responsive Design Tests', () => {
       expect(desktopHeroTitle.length).toBeGreaterThan(0)
     })
 
-    test('should handle skills showcase responsively', async ({page}) => {
-      const homePage = new HomePage(page)
-
-      for (const breakpoint of breakpoints) {
-        await page.setViewportSize({
-          width: breakpoint.width,
-          height: breakpoint.height,
-        })
-
-        await homePage.goto()
-
-        if ((await homePage.skillsShowcase.count()) > 0) {
-          expect(await homePage.isSkillsShowcaseVisible()).toBe(true)
-
-          const skills = await homePage.getSkillItems()
-          expect(skills.length).toBeGreaterThanOrEqual(0)
-        }
-      }
-    })
-
     test('should maintain readability across screen sizes', async ({page}) => {
       const homePage = new HomePage(page)
 

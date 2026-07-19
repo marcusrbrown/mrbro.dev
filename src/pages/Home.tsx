@@ -2,12 +2,10 @@ import type {Project} from '../types'
 import React, {useState} from 'react'
 import AboutSection from '../components/AboutSection'
 import BlogPost from '../components/BlogPost'
-import ContactCta from '../components/ContactCta'
 import HeroSection from '../components/HeroSection'
 import LoadingState, {ProjectCardSkeleton} from '../components/LoadingStates'
 import ProjectGallery from '../components/ProjectGallery'
 import ProjectPreviewModal from '../components/ProjectPreviewModal'
-import SkillsShowcase from '../components/SkillsShowcase'
 import SmoothScrollNav from '../components/SmoothScrollNav'
 import {useErrorTracking, useProjectTracking, useSectionTracking} from '../hooks/UseAnalytics'
 import {useBlogPosts} from '../hooks/UseBlogPosts'
@@ -29,7 +27,6 @@ const Home: React.FC = () => {
   const {trackError} = useErrorTracking()
   const {trackProjectClick, trackProjectModal} = useProjectTracking()
   const heroRef = useSectionTracking<HTMLDivElement>('hero')
-  const skillsRef = useSectionTracking<HTMLDivElement>('skills')
   const aboutRef = useSectionTracking<HTMLDivElement>('about')
   const projectsRef = useSectionTracking<HTMLElement>('projects')
   const blogRef = useSectionTracking<HTMLElement>('blog')
@@ -77,11 +74,6 @@ const Home: React.FC = () => {
         <HeroSection />
       </div>
 
-      {/* Skills & Expertise Showcase */}
-      <div ref={skillsRef}>
-        <SkillsShowcase />
-      </div>
-
       {/* About Section with Professional Story */}
       <div ref={aboutRef}>
         <AboutSection />
@@ -119,9 +111,6 @@ const Home: React.FC = () => {
           </div>
         </section>
       )}
-
-      {/* Contact CTA Section */}
-      <ContactCta />
 
       {/* Project Preview Modal */}
       <ProjectPreviewModal

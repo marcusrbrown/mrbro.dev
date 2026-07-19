@@ -73,7 +73,7 @@ describe('HeroSection', () => {
     it('should render the secondary CTA button', () => {
       render(<HeroSection />)
       const secondary = screen.getByRole('link', {name: /Get In Touch/})
-      expect(secondary).toHaveAttribute('href', '#contact')
+      expect(secondary).toHaveAttribute('href', 'mailto:hello@mrbro.dev')
     })
 
     it('should render in loading state initially', () => {

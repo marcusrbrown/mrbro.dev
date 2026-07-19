@@ -19,7 +19,7 @@ describe('SmoothScrollNav', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Create mock sections in DOM
-    const sections = ['hero', 'skills', 'about', 'projects', 'blog', 'contact']
+    const sections = ['hero', 'about', 'projects', 'blog']
     sections.forEach(id => {
       const section = document.createElement('section')
       section.id = id
@@ -36,11 +36,11 @@ describe('SmoothScrollNav', () => {
     render(<SmoothScrollNav />)
 
     expect(screen.getByText('Home')).toBeInTheDocument()
-    expect(screen.getByText('Skills')).toBeInTheDocument()
     expect(screen.getByText('About')).toBeInTheDocument()
     expect(screen.getByText('Projects')).toBeInTheDocument()
     expect(screen.getByText('Blog')).toBeInTheDocument()
-    expect(screen.getByText('Contact')).toBeInTheDocument()
+    expect(screen.queryByText('Skills')).not.toBeInTheDocument()
+    expect(screen.queryByText('Contact')).not.toBeInTheDocument()
   })
 
   it('renders with progress indicator by default', () => {
@@ -77,20 +77,20 @@ describe('SmoothScrollNav', () => {
   it('handles keyboard navigation', () => {
     render(<SmoothScrollNav />)
 
-    const skillsSection = document.querySelector('#skills') as HTMLElement
-    const scrollIntoViewSpy = vi.spyOn(skillsSection, 'scrollIntoView')
+    const aboutSection = document.querySelector('#about') as HTMLElement
+    const scrollIntoViewSpy = vi.spyOn(aboutSection, 'scrollIntoView')
 
-    const skillsButton = screen.getByRole('button', {name: /navigate to skills section/i})
+    const aboutButton = screen.getByRole('button', {name: /navigate to about section/i})
 
     // Test Enter key
-    fireEvent.keyDown(skillsButton, {key: 'Enter', code: 'Enter'})
+    fireEvent.keyDown(aboutButton, {key: 'Enter', code: 'Enter'})
     expect(scrollIntoViewSpy).toHaveBeenCalledWith({
       behavior: 'smooth',
       block: 'start',
     })
 
     // Test Space key
-    fireEvent.keyDown(skillsButton, {key: ' ', code: 'Space'})
+    fireEvent.keyDown(aboutButton, {key: ' ', code: 'Space'})
     expect(scrollIntoViewSpy).toHaveBeenCalledTimes(2)
   })
 

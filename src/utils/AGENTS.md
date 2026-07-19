@@ -21,7 +21,6 @@
 | ------------------------ | --------------------------------------------------------------------------- |
 | `accessibility.ts`       | Keyboard handlers, focus traps, screen reader announcements, reduced motion |
 | `analytics.ts`           | Page view + interaction tracking                                            |
-| `animation-utils.ts`     | Scroll-based animation helpers                                              |
 | `github.ts`              | GitHub API client — pure `fetch`, repos + blog posts (`GITHUB_API_URL`)     |
 | `syntax-highlighting.ts` | Shiki integration — externalized from bundle via build config               |
 | `schema-validation.ts`   | JSON schema validation against `src/schemas/theme.schema.json`              |
@@ -36,4 +35,4 @@
 ## Testing
 
 - **Location**: `tests/utils/` (9 test files — good coverage)
-- **Gap**: `animation-utils.ts`, `analytics.ts` lack dedicated tests
+- **Gap**: `analytics.ts` lacks dedicated tests

@@ -1,9 +1,6 @@
 import React from 'react'
 import {useParallax} from '../hooks/UseParallax'
 import {useScrollAnimation} from '../hooks/UseScrollAnimation'
-import AnimatedCounters from './AnimatedCounters'
-import CareerTimeline from './CareerTimeline'
-import TestimonialsCarousel from './TestimonialsCarousel'
 
 interface AboutSectionProps {
   className?: string
@@ -17,18 +14,6 @@ const AboutSection: React.FC<AboutSectionProps> = ({className = ''}) => {
   })
 
   const {ref: storyRef, isInView: storyInView} = useScrollAnimation<HTMLDivElement>({
-    threshold: 0.1,
-    rootMargin: '100px 0px',
-    triggerOnce: true,
-  })
-
-  const {ref: countersRef, isInView: countersInView} = useScrollAnimation<HTMLDivElement>({
-    threshold: 0.1,
-    rootMargin: '100px 0px',
-    triggerOnce: true,
-  })
-
-  const {ref: timelineRef, isInView: timelineInView} = useScrollAnimation<HTMLDivElement>({
     threshold: 0.1,
     rootMargin: '100px 0px',
     triggerOnce: true,
@@ -100,63 +85,6 @@ const AboutSection: React.FC<AboutSectionProps> = ({className = ''}) => {
               exploring the latest developments in web technologies. I'm always excited to take on new challenges and
               contribute to meaningful projects.
             </p>
-          </div>
-        </div>
-
-        {/* Professional Statistics */}
-        <div
-          ref={countersRef}
-          className="about-counters"
-          style={{
-            opacity: countersInView ? 1 : 0,
-            transform: countersInView ? 'translateY(0)' : 'translateY(2rem)',
-            transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-            transitionDelay: countersInView ? '0.4s' : '0s',
-          }}
-        >
-          <AnimatedCounters />
-        </div>
-
-        {/* Career Timeline */}
-        <div
-          ref={timelineRef}
-          className="about-timeline"
-          style={{
-            opacity: timelineInView ? 1 : 0,
-            transform: timelineInView ? 'translateY(0)' : 'translateY(2rem)',
-            transition: 'opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-            transitionDelay: timelineInView ? '0.6s' : '0s',
-          }}
-        >
-          <h3 className="about-timeline-title">Professional Journey</h3>
-          <CareerTimeline />
-        </div>
-
-        {/* Testimonials */}
-        <div className="about-testimonials">
-          <TestimonialsCarousel />
-        </div>
-
-        {/* Call to Action */}
-        <div className="about-cta">
-          <p className="about-cta-text">Interested in working together or discussing opportunities?</p>
-          <div className="about-cta-buttons">
-            <a
-              href="#contact"
-              className="btn btn--primary btn--large"
-              aria-label="Get in touch for collaboration opportunities"
-            >
-              Let's Connect
-            </a>
-            <a
-              href="/resume"
-              className="btn btn--secondary btn--large"
-              aria-label="Download professional resume"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View Resume
-            </a>
           </div>
         </div>
       </div>

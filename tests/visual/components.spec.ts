@@ -123,27 +123,6 @@ test.describe('UI Components', () => {
     })
   })
 
-  test.describe('Skills Showcase', () => {
-    THEMES.forEach(theme => {
-      test(`Skills showcase - ${theme} theme`, async ({page}) => {
-        await page.goto('/')
-        await preparePageForVisualTest(page, {theme})
-
-        const skillsComponent = page.locator('#skills.skills-showcase')
-
-        if ((await skillsComponent.count()) > 0) {
-          await skillsComponent.scrollIntoViewIfNeeded()
-          await waitForComponentStable(page, '#skills.skills-showcase')
-
-          await skillsComponent.screenshot({
-            path: `tests/visual/screenshots/skills-showcase-${theme}-theme.png`,
-            animations: 'disabled',
-          })
-        }
-      })
-    })
-  })
-
   test.describe('Hero Section', () => {
     THEMES.forEach(theme => {
       test(`Hero section - ${theme} theme`, async ({page}) => {

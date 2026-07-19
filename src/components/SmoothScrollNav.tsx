@@ -34,11 +34,9 @@ interface SmoothScrollNavProps {
  */
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   {id: 'hero', label: 'Home', icon: '🏠'},
-  {id: 'skills', label: 'Skills', icon: '💡'},
   {id: 'about', label: 'About', icon: '👨‍💻'},
   {id: 'projects', label: 'Projects', icon: '🚀'},
   {id: 'blog', label: 'Blog', icon: '📝'},
-  {id: 'contact', label: 'Contact', icon: '📬'},
 ]
 
 /**

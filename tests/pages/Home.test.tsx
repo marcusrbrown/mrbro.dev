@@ -35,16 +35,8 @@ vi.mock('../../src/components/HeroSection', () => ({
   default: () => <div data-testid="hero-section">Hero</div>,
 }))
 
-vi.mock('../../src/components/SkillsShowcase', () => ({
-  default: () => <div data-testid="skills-showcase">Skills</div>,
-}))
-
 vi.mock('../../src/components/AboutSection', () => ({
   default: () => <div data-testid="about-section">About</div>,
-}))
-
-vi.mock('../../src/components/ContactCta', () => ({
-  default: () => <div data-testid="contact-cta">Contact</div>,
 }))
 
 vi.mock('../../src/components/SmoothScrollNav', () => ({
@@ -142,10 +134,10 @@ describe('Home Page', () => {
 
     render(<HomeWrapper />)
     expect(screen.getByTestId('hero-section')).toBeInTheDocument()
-    expect(screen.getByTestId('skills-showcase')).toBeInTheDocument()
     expect(screen.getByTestId('about-section')).toBeInTheDocument()
-    expect(screen.getByTestId('contact-cta')).toBeInTheDocument()
     expect(screen.getByTestId('smooth-scroll-nav')).toBeInTheDocument()
+    expect(screen.queryByTestId('skills-showcase')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('contact-cta')).not.toBeInTheDocument()
   })
 
   it('should render project gallery section', () => {

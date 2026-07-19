@@ -8,7 +8,6 @@ import {BasePage} from './BasePage'
  */
 export class HomePage extends BasePage {
   readonly heroSection: Locator
-  readonly skillsShowcase: Locator
   readonly featuredProjects: Locator
   readonly heroTitle: Locator
   readonly heroSubtitle: Locator
@@ -17,7 +16,6 @@ export class HomePage extends BasePage {
   constructor(page: Page) {
     super(page)
     this.heroSection = page.locator('.hero-section')
-    this.skillsShowcase = page.locator('.skills-showcase')
     this.featuredProjects = page.locator('.projects-section')
     this.heroTitle = page.locator('.hero-title')
     this.heroSubtitle = page.locator('.hero-subtitle')
@@ -54,21 +52,6 @@ export class HomePage extends BasePage {
   }
 
   /**
-   * Check if skills showcase is present
-   */
-  async isSkillsShowcaseVisible(): Promise<boolean> {
-    return this.skillsShowcase.isVisible()
-  }
-
-  /**
-   * Get all skill items displayed
-   */
-  async getSkillItems(): Promise<string[]> {
-    const skillElements = await this.skillsShowcase.locator('.skill-item, .skill').allTextContents()
-    return skillElements.filter(skill => skill.trim().length > 0)
-  }
-
-  /**
    * Check if featured projects section is visible
    */
   async isFeaturedProjectsVisible(): Promise<boolean> {
@@ -96,10 +79,9 @@ export class HomePage extends BasePage {
    */
   async verifyMainSections(): Promise<boolean> {
     const heroVisible = await this.isHeroSectionVisible()
-    const skillsVisible = await this.isSkillsShowcaseVisible()
     const projectsVisible = await this.isFeaturedProjectsVisible()
 
-    return heroVisible && skillsVisible && projectsVisible
+    return heroVisible && projectsVisible
   }
 
   /**

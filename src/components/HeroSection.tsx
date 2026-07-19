@@ -43,7 +43,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   primaryCTA = 'View My Work',
   primaryHref = '#projects',
   secondaryCTA = 'Get In Touch',
-  secondaryHref = '#contact',
+  secondaryHref = 'mailto:hello@mrbro.dev',
 }) => {
   // Animation hooks for staggered entrance effects
   const {ref: titleRef, animationState: titleAnimationState} = useScrollAnimation<HTMLHeadingElement>({
