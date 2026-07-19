@@ -1,6 +1,6 @@
 # scripts/
 
-14 CI/build automation scripts for bundle analysis, performance monitoring, test orchestration, and repo management.
+19 CI/build automation scripts for bundle analysis, performance monitoring, test orchestration, repo management, blog snapshot, and project preview refresh.
 
 ## Execution
 
@@ -47,6 +47,12 @@
 | `branch-protection-api.ts`       | GitHub API client for branch protection operations     |
 | `branch-protection-gh.ts`        | GitHub CLI wrapper for branch protection management    |
 | `apply-repo-settings.ts`         | Applies repository-level settings via GitHub API       |
+
+### Content Refresh
+
+| Script | Role |
+| --- | --- |
+| `project-preview-refresh.ts` | Fetches and atomically publishes GitHub social cards, with fail-safe refresh and R9 pruning |
 
 ## CI Integration
 

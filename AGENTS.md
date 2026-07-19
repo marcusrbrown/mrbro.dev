@@ -18,14 +18,15 @@ src/
 ├── types/         # TypeScript types, barrel export via index.ts
 ├── schemas/       # theme + blog-frontmatter schemas for runtime validation
 └── styles/        # Global CSS
-scripts/           # 18 build/test automation scripts (see scripts/AGENTS.md)
+scripts/           # 19 build/test automation scripts (see scripts/AGENTS.md)
+public/project-previews/ # Committed generated GitHub social-card preview assets
 tests/             # Multi-type test infrastructure (see tests/AGENTS.md)
 .agents/
 └── skills/        # Agent skill definitions (agent-browser, playwright-mcp)
 .ai/plan/          # Feature implementation plans (reference only)
 docs/              # solutions/ = documented fixes by category w/ YAML frontmatter (module, tags, problem_type); plus brainstorms/, plans/, blog-system.md
 .github/
-├── workflows/     # 8 workflows: deploy, ci, e2e-tests, performance, fro-bot, blog-refresh, renovate, copilot-setup-steps
+├── workflows/     # 8 workflows: deploy, ci, e2e-tests, performance, fro-bot, blog-refresh (including preview-image refresh), renovate, copilot-setup-steps
 ├── actions/setup/ # Reusable CI setup action (Node 22, pnpm, Playwright)
 └── hooks/         # Copilot hooks (pre-tool-use guardrails)
 examples/          # Usage examples (button-form-styles, use-theme)

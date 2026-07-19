@@ -333,7 +333,8 @@ a:hover {
     outline: none;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.btn--primary {
     background-color: var(--color-primary);
     color: var(--color-background);
     border-color: var(--color-primary);
@@ -396,11 +397,7 @@ a:hover {
 }
 
 /* Primary Button */
-.btn--primary {
-    background-color: var(--color-primary);
-    color: var(--color-background);
-    border-color: var(--color-primary);
-}
+
 
 .btn--primary:hover:not(:disabled) {
     background-color: var(--color-accent);
@@ -527,7 +524,9 @@ a:hover {
 
 .form-input:focus,
 .form-textarea:focus,
-.form-select:focus {
+.form-select:focus,
+.theme-metadata__input:focus,
+.color-input__text:focus {
     outline: none;
     border-color: var(--color-focus);
     box-shadow: 0 0 0 2px var(--color-focus-ring);
@@ -742,7 +741,9 @@ a:hover {
     transition: var(--transition-theme-fast);
 }
 
-.theme-customizer__close:hover {
+.color-input__toggle:hover,
+.theme-customizer__close:hover,
+.theme-customizer__action--secondary:hover {
     background: var(--color-border);
     color: var(--color-text);
 }
@@ -781,11 +782,7 @@ a:hover {
     transition: var(--transition-theme-fast);
 }
 
-.theme-metadata__input:focus {
-    outline: none;
-    border-color: var(--color-focus);
-    box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
+
 
 .theme-metadata__mode {
     border: 1px solid var(--color-border);
@@ -895,11 +892,7 @@ a:hover {
     transition: var(--transition-theme-fast);
 }
 
-.color-input__text:focus {
-    outline: none;
-    border-color: var(--color-focus);
-    box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
+
 
 .color-input__text--invalid {
     border-color: var(--color-error);
@@ -918,10 +911,7 @@ a:hover {
     transition: var(--transition-theme-fast);
 }
 
-.color-input__toggle:hover {
-    background: var(--color-border);
-    color: var(--color-text);
-}
+
 
 .color-input__toggle[aria-expanded="true"] {
     background: var(--color-primary);
@@ -1027,10 +1017,7 @@ a:hover {
     color: var(--color-text-secondary);
 }
 
-.theme-customizer__action--secondary:hover {
-    background: var(--color-border);
-    color: var(--color-text);
-}
+
 
 .theme-customizer__action--primary {
     background: var(--color-primary);
