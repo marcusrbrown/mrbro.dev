@@ -73,7 +73,7 @@ describe('HeroSection', () => {
     it('should render the secondary CTA button', () => {
       render(<HeroSection />)
       const secondary = screen.getByRole('link', {name: /Get In Touch/})
-      expect(secondary).toHaveAttribute('href', '#contact')
+      expect(secondary).toHaveAttribute('href', 'mailto:hello@mrbro.dev')
     })
 
     it('should render in loading state initially', () => {
@@ -205,6 +205,25 @@ describe('HeroSection', () => {
       // Should not throw
       expect(() => fireEvent.keyDown(link, {key: 'Tab'})).not.toThrow()
     })
+
+    it('should preventDefault and smooth-scroll on Enter for the hash primary CTA', () => {
+      render(<HeroSection primaryHref="#projects" />)
+      const link = screen.getByRole('link', {name: /View My Work/})
+
+      // fireEvent.keyDown returns false when preventDefault() was called on the event
+      const notPrevented = fireEvent.keyDown(link, {key: 'Enter'})
+      expect(notPrevented).toBe(false)
+    })
+
+    it('should NOT preventDefault on Enter for the default (mailto) secondary CTA, allowing native activation', () => {
+      render(<HeroSection />)
+      const link = screen.getByRole('link', {name: /Get In Touch/})
+      expect(link).toHaveAttribute('href', 'mailto:hello@mrbro.dev')
+
+      // fireEvent.keyDown returns true when preventDefault() was NOT called on the event
+      const notPrevented = fireEvent.keyDown(link, {key: 'Enter'})
+      expect(notPrevented).toBe(true)
+    })
   })
 
   describe('accessibility', () => {
@@ -219,6 +238,18 @@ describe('HeroSection', () => {
       render(<HeroSection />)
       const desc = document.querySelector('#secondary-cta-description')
       expect(desc).toBeInTheDocument()
+    })
+
+    it('should describe the secondary CTA as an email action, matching the mailto href', () => {
+      render(<HeroSection />)
+      const link = screen.getByRole('link', {name: /Get In Touch/})
+      const describedById = link.getAttribute('aria-describedby')
+      expect(describedById).toBeTruthy()
+
+      const desc = document.querySelector(`#${describedById}`)
+      expect(desc).toBeInTheDocument()
+      expect(desc).toHaveTextContent(/email/i)
+      expect(desc).not.toHaveTextContent(/contact section/i)
     })
 
     it('should have aria-hidden background element', () => {

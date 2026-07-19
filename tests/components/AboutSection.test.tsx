@@ -21,19 +21,6 @@ vi.mock('../../src/hooks/UseParallax', () => ({
   })),
 }))
 
-// Mock the sub-components
-vi.mock('../../src/components/AnimatedCounters', () => ({
-  default: () => <div data-testid="animated-counters">Animated Counters</div>,
-}))
-
-vi.mock('../../src/components/CareerTimeline', () => ({
-  default: () => <div data-testid="career-timeline">Career Timeline</div>,
-}))
-
-vi.mock('../../src/components/TestimonialsCarousel', () => ({
-  default: () => <div data-testid="testimonials-carousel">Testimonials Carousel</div>,
-}))
-
 describe('AboutSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -67,31 +54,15 @@ describe('AboutSection', () => {
       expect(screen.getByText(/contributing to open-source projects/)).toBeInTheDocument()
     })
 
-    it('should render animated counters component', () => {
+    it('should not render removed sub-sections', () => {
       render(<AboutSection />)
 
-      expect(screen.getByTestId('animated-counters')).toBeInTheDocument()
-    })
-
-    it('should render career timeline component', () => {
-      render(<AboutSection />)
-
-      expect(screen.getByTestId('career-timeline')).toBeInTheDocument()
-      expect(screen.getByRole('heading', {name: 'Professional Journey'})).toBeInTheDocument()
-    })
-
-    it('should render testimonials carousel component', () => {
-      render(<AboutSection />)
-
-      expect(screen.getByTestId('testimonials-carousel')).toBeInTheDocument()
-    })
-
-    it('should render call-to-action section', () => {
-      render(<AboutSection />)
-
-      expect(screen.getByText(/Interested in working together/)).toBeInTheDocument()
-      expect(screen.getByRole('link', {name: 'Get in touch for collaboration opportunities'})).toBeInTheDocument()
-      expect(screen.getByRole('link', {name: 'Download professional resume'})).toBeInTheDocument()
+      expect(screen.queryByRole('heading', {name: 'Professional Journey'})).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', {name: 'What People Say'})).not.toBeInTheDocument()
+      expect(screen.queryByText(/Interested in working together/)).not.toBeInTheDocument()
+      expect(screen.queryByTestId('animated-counters')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('career-timeline')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('testimonials-carousel')).not.toBeInTheDocument()
     })
   })
 
@@ -109,23 +80,6 @@ describe('AboutSection', () => {
 
       const mainHeading = screen.getByRole('heading', {level: 2, name: 'About Me'})
       expect(mainHeading).toHaveAttribute('id', 'about-heading')
-
-      const timelineHeading = screen.getByRole('heading', {level: 3, name: 'Professional Journey'})
-      expect(timelineHeading).toBeInTheDocument()
-    })
-
-    it('should have accessible CTA links', () => {
-      render(<AboutSection />)
-
-      const connectLink = screen.getByRole('link', {name: 'Get in touch for collaboration opportunities'})
-      expect(connectLink).toHaveAttribute('href', '#contact')
-      expect(connectLink).toHaveAttribute('aria-label', 'Get in touch for collaboration opportunities')
-
-      const resumeLink = screen.getByRole('link', {name: 'Download professional resume'})
-      expect(resumeLink).toHaveAttribute('href', '/resume')
-      expect(resumeLink).toHaveAttribute('aria-label', 'Download professional resume')
-      expect(resumeLink).toHaveAttribute('target', '_blank')
-      expect(resumeLink).toHaveAttribute('rel', 'noopener noreferrer')
     })
 
     it('should hide decorative elements from screen readers', () => {
@@ -142,8 +96,7 @@ describe('AboutSection', () => {
 
       render(<AboutSection />)
 
-      // Should call useScrollAnimation for header, story, counters, timeline sections
-      // Plus additional calls from testimonials carousel
+      // Should call useScrollAnimation for header and story sections
       expect(useScrollAnimation).toHaveBeenCalledWith({
         threshold: 0.1,
         rootMargin: '100px 0px',
@@ -218,14 +171,10 @@ describe('AboutSection', () => {
       expect(container).toBeDefined()
       const children = Array.from(container?.children || [])
 
-      // Should have header, story, counters, timeline, testimonials, and CTA
-      expect(children).toHaveLength(6)
+      // Should have only header and story
+      expect(children).toHaveLength(2)
       expect(children[0]).toHaveClass('section-header')
       expect(children[1]).toHaveClass('about-story')
-      expect(children[2]).toHaveClass('about-counters')
-      expect(children[3]).toHaveClass('about-timeline')
-      expect(children[4]).toHaveClass('about-testimonials')
-      expect(children[5]).toHaveClass('about-cta')
     })
 
     it('should have proper container structure', () => {
@@ -251,13 +200,6 @@ describe('AboutSection', () => {
       expect(screen.getByText(/Node.js and cloud platforms/)).toBeInTheDocument()
       expect(screen.getByText(/clean, maintainable code/)).toBeInTheDocument()
       expect(screen.getByText(/contributing to open-source projects/)).toBeInTheDocument()
-    })
-
-    it('should have engaging call-to-action content', () => {
-      render(<AboutSection />)
-
-      expect(screen.getByText(/Interested in working together/)).toBeInTheDocument()
-      expect(screen.getByText(/discussing opportunities/)).toBeInTheDocument()
     })
   })
 })

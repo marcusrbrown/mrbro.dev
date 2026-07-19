@@ -48,7 +48,6 @@ export const testData = {
 
     // Home page specific
     heroSection: '[data-testid="hero-section"]',
-    skillsShowcase: '[data-testid="skills-showcase"]',
     featuredProjects: '[data-testid="featured-projects"]',
 
     // Content selectors
