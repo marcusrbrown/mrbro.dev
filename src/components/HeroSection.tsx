@@ -101,9 +101,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   }
 
   /**
-   * Handles keyboard navigation for CTA buttons
+   * Handles keyboard navigation for CTA buttons.
+   * Only intercepts activation for in-page hash links (smooth scroll targets);
+   * non-hash hrefs (mailto:, http(s), etc.) are left to native anchor activation
+   * so keyboard users can still trigger them (e.g. opening a mail client).
    */
-  const handleKeyDown = (event: React.KeyboardEvent, action: () => void) => {
+  const handleKeyDown = (event: React.KeyboardEvent, href: string, action: () => void) => {
+    if (!href.startsWith('#')) return
+
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       action()
@@ -142,7 +147,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             href={primaryHref}
             className="hero-cta-button hero-cta-button--primary"
             onClick={e => handleSmoothScroll(e, primaryHref)}
-            onKeyDown={e => handleKeyDown(e, () => handleSmoothScroll(e, primaryHref))}
+            onKeyDown={e => handleKeyDown(e, primaryHref, () => handleSmoothScroll(e, primaryHref))}
             aria-describedby="primary-cta-description"
           >
             <span>{primaryCTA}</span>
@@ -156,14 +161,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({
             href={secondaryHref}
             className="hero-cta-button hero-cta-button--secondary"
             onClick={e => handleSmoothScroll(e, secondaryHref)}
-            onKeyDown={e => handleKeyDown(e, () => handleSmoothScroll(e, secondaryHref))}
+            onKeyDown={e => handleKeyDown(e, secondaryHref, () => handleSmoothScroll(e, secondaryHref))}
             aria-describedby="secondary-cta-description"
           >
             <span>{secondaryCTA}</span>
             <span aria-hidden="true">✉</span>
           </a>
           <span id="secondary-cta-description" className="sr-only">
-            Navigate to contact section to get in touch
+            Send an email to get in touch
           </span>
         </div>
       </div>
