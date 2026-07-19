@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-19T07:19:03.305Z",
+  "title": "Design System: mrbro.dev",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Working Blue",
+        "canonical": "hex",
+        "tonalRamp": ["#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#dbeafe", "#eff6ff"]
+      },
+      "secondary": {
+        "role": "secondary",
+        "displayName": "Medium Gray",
+        "canonical": "hex",
+        "tonalRamp": ["#374151", "#4b5563", "#6b7280", "#9ca3af", "#d1d5db", "#e5e7eb", "#f3f4f6", "#f9fafb"]
+      },
+      "secondary-preload": {
+        "role": "secondary",
+        "displayName": "Muted Slate",
+        "canonical": "hex",
+        "tonalRamp": ["#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f1f5f9", "#f8fafc"]
+      },
+      "accent": {
+        "role": "accent",
+        "displayName": "Signal Cyan",
+        "canonical": "hex",
+        "tonalRamp": ["#0369a1", "#0284c7", "#0ea5e9", "#38bdf8", "#7dd3fc", "#bae6fd", "#e0f2fe", "#f0f9ff"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Frost Surface",
+        "canonical": "hex",
+        "tonalRamp": ["#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0", "#f8fafc"]
+      }
+    },
+    "typographyMeta": {
+      "display": {"displayName": "Display", "purpose": "Hero title headlines only."},
+      "headline": {"displayName": "Headline", "purpose": "Main section headers."},
+      "title": {"displayName": "Title", "purpose": "Cards and lists headers."},
+      "body": {"displayName": "Body", "purpose": "Readable descriptions and general copy."},
+      "action": {"displayName": "Action", "purpose": "Buttons and call-to-actions text."},
+      "label": {"displayName": "Label", "purpose": "Metadata, chips, tags, and actions."}
+    },
+    "shadows": [
+      {
+        "name": "resting-low",
+        "value": "0 1px 3px rgba(0, 0, 0, 0.1)",
+        "purpose": "Resting headers and floating bar outlines."
+      },
+      {
+        "name": "resting-card",
+        "value": "0 4px 12px rgba(0, 0, 0, 0.1)",
+        "purpose": "Default card boundaries under tactile lift."
+      },
+      {
+        "name": "hover-lift",
+        "value": "0 12px 32px rgba(0, 0, 0, 0.15)",
+        "purpose": "High-impact card active lifts on hover."
+      }
+    ],
+    "motion": [
+      {
+        "name": "fast",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Interactive hover and state changes."
+      },
+      {"name": "slow", "value": "300ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Layout changes and theme switching."}
+    ],
+    "breakpoints": [
+      {"name": "xs", "value": "480px"},
+      {"name": "sm", "value": "640px"},
+      {"name": "md", "value": "768px"},
+      {"name": "lg", "value": "1200px"}
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Hero CTA",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary call-to-action anchor link with tactile shadow lift.",
+      "html": "<a href=\"#\" class=\"ds-hero-primary\"><span>Explore Projects</span> <span class=\"ds-arrow\">→</span></a>",
+      "css": ".ds-hero-primary { background: #2563eb; color: #ffffff; padding: 20px 40px; font-size: 20px; font-weight: 600; font-family: Arial, sans-serif; text-decoration: none; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-hero-primary:hover { background: #0ea5e9; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4); } .ds-hero-primary:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; } .ds-arrow { transition: transform 150ms ease; } .ds-hero-primary:hover .ds-arrow { transform: translateX(4px); }"
+    },
+    {
+      "name": "Secondary Hero CTA",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action anchor link with solid border bounds.",
+      "html": "<a href=\"#\" class=\"ds-hero-secondary\"><span>Get In Touch</span> <span class=\"ds-icon\">✉</span></a>",
+      "css": ".ds-hero-secondary { background: transparent; color: #0f172a; padding: 20px 40px; font-size: 20px; font-weight: 600; font-family: Arial, sans-serif; text-decoration: none; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-hero-secondary:hover { background: #f8fafc; border-color: #2563eb; transform: translateY(-2px); } .ds-hero-secondary:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation Link",
+      "kind": "nav",
+      "description": "Desktop navigation links showing active page underlining.",
+      "html": "<div class=\"ds-nav-container\"><a href=\"#\" class=\"ds-nav-link ds-nav-link--active\">Projects</a><a href=\"#\" class=\"ds-nav-link\">Blog</a></div>",
+      "css": ".ds-nav-container { display: flex; gap: 32px; font-family: Arial, sans-serif; } .ds-nav-link { color: #4b5563; text-decoration: none; font-size: 16px; font-weight: 500; padding: 8px 0; position: relative; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-nav-link:hover { color: #2563eb; } .ds-nav-link:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; border-radius: 2px; } .ds-nav-link--active { color: #2563eb; font-weight: 600; } .ds-nav-link--active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background-color: #2563eb; border-radius: 1px; }"
+    },
+    {
+      "name": "Theme Toggle",
+      "kind": "button",
+      "description": "Interactive light/dark toggle displaying emojis.",
+      "html": "<button class=\"ds-theme-toggle\"><span class=\"ds-toggle-icon\">💻</span> <span class=\"ds-toggle-text\">System</span></button>",
+      "css": ".ds-theme-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background-color: #f8fafc; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; font-size: 14px; font-weight: 500; font-family: Arial, sans-serif; } .ds-theme-toggle:hover { background-color: #2563eb; color: #ffffff; border-color: #2563eb; } .ds-theme-toggle:focus-visible { box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2); border-color: #0ea5e9; outline: none; } .ds-theme-toggle:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Project Card",
+      "kind": "card",
+      "refersTo": "project-card-globals",
+      "description": "Observed project card with factual 5px radius and 16px resting padding under tactile lift.",
+      "html": "<div class=\"ds-project-card\" tabindex=\"0\"><div class=\"ds-card-image\"><div class=\"ds-lang-badge\">TypeScript</div></div><div class=\"ds-card-content\"><h3 class=\"ds-card-title\">Sample Project</h3><p class=\"ds-card-desc\">A generic description of a repository item showcasing shipped code and public proof.</p></div></div>",
+      "css": ".ds-project-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); cursor: pointer; display: flex; flex-direction: column; font-family: Arial, sans-serif; transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), border-color 200ms ease; } .ds-project-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15); } .ds-project-card:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; } .ds-card-image { position: relative; height: 180px; background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%); display: flex; align-items: center; justify-content: center; } .ds-lang-badge { position: absolute; top: 12px; left: 12px; background: #f8fafc; color: #0f172a; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid #e2e8f0; } .ds-card-content { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; } .ds-card-title { font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0; line-height: 1.3; } .ds-card-desc { color: #4b5563; font-size: 14px; line-height: 1.5; margin: 0; }"
+    },
+    {
+      "name": "Filter Pill",
+      "kind": "chip",
+      "refersTo": "filter-chip",
+      "description": "Fully rounded project selector filter pill.",
+      "html": "<button class=\"ds-filter-pill ds-filter-pill--active\">TypeScript</button>",
+      "css": ".ds-filter-pill { background: #ffffff; color: #4b5563; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; font-family: Arial, sans-serif; cursor: pointer; transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease; } .ds-filter-pill:hover { color: #0f172a; border-color: #2563eb; transform: translateY(-1px); } .ds-filter-pill--active { background: #2563eb; color: #ffffff; border-color: #2563eb; border: 1px solid #2563eb; } .ds-filter-pill--active:hover { background: #0ea5e9; border-color: #0ea5e9; } .ds-filter-pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }"
+    },
+    {
+      "name": "Code Block",
+      "kind": "custom",
+      "description": "Standard code block snippet rendering in system monospace.",
+      "html": "<div class=\"ds-code-block\"><div class=\"ds-code-header\"><span class=\"ds-code-title\">UseTheme.ts</span><span class=\"ds-code-lang\">TS</span></div><div class=\"ds-code-content\"><pre><code><span class=\"ds-keyword\">const</span> useTheme = () =&gt; {}</code></pre></div></div>",
+      "css": ".ds-code-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin: 16px 0; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); font-family: 'Monaco', 'Menlo', 'Consolas', monospace; } .ds-code-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #ffffff; border-bottom: 1px solid #e2e8f0; font-size: 14px; } .ds-code-title { color: #0f172a; font-weight: 600; } .ds-code-lang { color: #4b5563; background: #f8fafc; padding: 4px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase; font-weight: 500; } .ds-code-content { background: #f8fafc; } .ds-code-content pre { margin: 0; padding: 16px; color: #0f172a; font-size: 14px; line-height: 1.5; } .ds-keyword { color: #2563eb; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Working Bench",
+    "overview": "This system represents an evidence-first and tactile portfolio interface that prioritizes public engineering credibility over stylistic performance. It is modeled as a functional developer bench—an organized, highly clear environment designed for software peers to explore shipping code. The layout structure relies on a flat, highly legible grid containing actual metrics and proof.\n\nTo align with this strategic objective, the design explicitly rejects standard marketing conventions and decorative embellishments. It rejects generic résumé templates, SaaS landing-page polish, terminal cosplay, and editorial affectation by name. The voice is direct, opinionated, and focused on functional utility.",
+    "keyCharacteristics": [
+      "Tactile Responsiveness: Immediate, predictable feedback on every interactive control and state change.",
+      "Evidence-First Hierarchy: Direct representation of public repository work without marketing noise or abstract claims.",
+      "Intentional Transitions: Safe theme and content switching that implements high-performance containment to minimize browser layout shifts."
+    ],
+    "rules": [
+      {
+        "name": "The Preload/Runtime Drift Rule",
+        "body": "Developers must account for preload/runtime drift between CSS-compiled tokens (#64748b) and hydrated React context tokens (#4b5563) on secondary text colors.",
+        "section": "colors"
+      },
+      {
+        "name": "The Monospace Code Cell Rule",
+        "body": "Monospace styling is reserved strictly for raw code blocks, repository identifiers, and terminal inputs to prevent aesthetic terminal cosplay.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tactile Lift Rule",
+        "body": "Components must rest with shallow, grounded elevation shadows. Stronger box shadows and vertical translation transforms must trigger exclusively as a dynamic response to pointer hover. Keyboard navigation and focus states must use explicit, high-contrast outline rings and must not alter resting shadow elevation or vertical placement.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do respect the tactile lift resting rule, keeping deep shadows and translations active exclusively as pointer-hover feedback; focus-visible uses an outline ring.",
+      "Do maintain a strict maximum text width of 70ch (src/styles/globals.css) for long blog prose to protect reading comfort.",
+      "Do specify clear, plain labels for all action items and descriptive text elements.",
+      "Do disable all transition animations immediately if prefers-reduced-motion: reduce is detected at the document root."
+    ],
+    "donts": [
+      "Don't use generic résumé templates: this prohibits skill grids, percentages, and interchangeable portfolio sections in favor of shipped software proof.",
+      "Don't apply SaaS landing-page polish: this forbids corporate gradients, metric heroes, and conversion theater in favor of clean layouts.",
+      "Don't adopt terminal cosplay: this prohibits monospace or command-line motifs used as decorative developer shorthand outside real code execution cells.",
+      "Don't rely on editorial affectation: this forbids magazine typography and complex art direction without a content reason.",
+      "Don't use decorative text gradients (background-clip: text) on headlines, as seen on the current hero title highlight, which represents a known design inconsistency.",
+      "Don't mix system font stacks with the current computed Arial typography rules until the underlying CSS conflicts are resolved."
+    ]
+  }
+}

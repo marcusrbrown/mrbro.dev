@@ -1,3 +1,7 @@
 globs:
   - '!.ai/**'
+  - '!.agents/skills/impeccable/**'
+  - '!.impeccable/**'
   - '!AGENTS.md'
+  - '!DESIGN.md'
+  - '!PRODUCT.md'
