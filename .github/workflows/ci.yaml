@@ -126,7 +126,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run TypeScript compiler
-        run: pnpm exec tsc --noEmit
+        run: pnpm run check-types
 
   validate:
     name: Validate Dependencies

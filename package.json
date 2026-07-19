@@ -21,7 +21,8 @@
   "type": "module",
   "main": "src/main.tsx",
   "scripts": {
-    "build": "tsc && vite build && tsx --import ./scripts/register-blog-snapshot-loader.mjs scripts/prerender-blog.ts",
+    "build": "pnpm run check-types && vite build && tsx --import ./scripts/register-blog-snapshot-loader.mjs scripts/prerender-blog.ts",
+    "check-types": "tsc --noEmit && tsc --noEmit -p .opencode/tsconfig.json",
     "dev": "vite",
     "fix": "eslint --fix",
     "lint": "eslint",
@@ -90,6 +91,7 @@
     "@bfra.me/tsconfig": "0.13.1",
     "@eslint-react/eslint-plugin": "2.13.0",
     "@lhci/cli": "0.15.1",
+    "@opencode-ai/plugin": "1.18.2",
     "@playwright/test": "1.61.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
