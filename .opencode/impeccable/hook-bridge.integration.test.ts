@@ -280,7 +280,7 @@ describe('createSpawnRunner + createHook end-to-end', () => {
         `setInterval(() => {}, 1000);`, // stay alive
       ].join('\n'),
     )
-    const runner = createSpawnRunner({scriptPath, timeoutMs: 50, killGraceMs: 50})
+    const runner = createSpawnRunner({scriptPath, timeoutMs: 1000, killGraceMs: 100})
     const hook = createHook({runDetector: runner, worktree: worktree()})
     const output = {title: 't', output: 'ok', metadata: {}}
 
