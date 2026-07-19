@@ -10,7 +10,7 @@ globalThis.IntersectionObserver = vi.fn(function (_callback, _options) {
     disconnect: vi.fn(),
     unobserve: vi.fn(),
   }
-}) as any
+}) as unknown as typeof IntersectionObserver
 
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn()
