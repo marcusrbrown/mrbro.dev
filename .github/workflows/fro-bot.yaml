@@ -52,6 +52,13 @@ env:
     Vite 7+ portfolio deployed to GitHub Pages.
     Read AGENTS.md for full project conventions before reviewing.
 
+    Review the diff directly. Do NOT invoke `ce:review` or any other `ce:*`
+    skill (ce:work, ce:plan, ce:brainstorm, ce:compound, etc.). Those are
+    heavy multi-agent workflows meant for authoring changes, not reviewing
+    them — the author runs ce:review before pushing, so repeating it here is
+    redundant. Read the changed files yourself with standard tools (read,
+    grep, git diff). A focused single-pass review is the goal.
+
     Focus your review on:
     - Correctness and edge cases
     - Security implications (XSS, secrets exposure, CSP violations)
