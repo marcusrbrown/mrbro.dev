@@ -146,6 +146,8 @@ describe('PresetThemeGallery', () => {
   beforeEach(() => {
     vi.mocked(useTheme).mockReturnValue({
       currentTheme: mockCurrentTheme,
+      activeThemeChoice: {type: 'mode', mode: 'light'},
+      activeCustomTheme: null,
       themeMode: 'light',
       availableThemes: [mockCurrentTheme],
       systemPreference: 'light',
@@ -156,6 +158,7 @@ describe('PresetThemeGallery', () => {
       isSystemLight: true,
       setThemeMode: vi.fn(),
       setCustomTheme: mockSetCustomTheme,
+      setActiveTheme: vi.fn(),
       toggleTheme: vi.fn(),
       switchToLight: vi.fn(),
       switchToDark: vi.fn(),

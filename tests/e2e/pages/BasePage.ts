@@ -1,4 +1,5 @@
 import type {Locator, Page} from '@playwright/test'
+import {expect} from '@playwright/test'
 
 /**
  * Base page class that provides common functionality for all pages
@@ -50,39 +51,50 @@ export class BasePage {
   }
 
   /**
-   * Toggle between light and dark themes
+   * Open the theme picker overlay via its trigger, if not already open.
+   * Uses the stable `.theme-toggle` compatibility selector and its
+   * accessible `aria-haspopup="listbox"` role.
    */
-  async toggleTheme() {
-    const currentTheme = await this.getCurrentTheme()
-    await this.themeToggle.click()
+  async openThemePicker(): Promise<Locator> {
+    const isExpanded = (await this.themeToggle.getAttribute('aria-expanded')) === 'true'
+    if (!isExpanded) {
+      await this.themeToggle.click()
+    }
+    const listbox = this.page.getByRole('listbox', {name: 'Theme choices'})
+    await listbox.waitFor({state: 'visible'})
+    return listbox
+  }
 
-    // Wait for theme change to complete - the ThemeContext has a 300ms transition
-    // Plus cleanup timers, so we need to wait a bit longer
-    await this.page.waitForTimeout(400)
-
-    // Optionally verify the theme actually changed
-    const newTheme = await this.getCurrentTheme()
-    if (newTheme === currentTheme) {
-      // Theme didn't change, might be a timing issue, wait a bit more
-      await this.page.waitForTimeout(200)
+  /**
+   * Close the theme picker overlay, if currently open.
+   */
+  async closeThemePicker() {
+    const isExpanded = (await this.themeToggle.getAttribute('aria-expanded')) === 'true'
+    if (isExpanded) {
+      await this.themeToggle.click()
+      await this.page.getByRole('listbox', {name: 'Theme choices'}).waitFor({state: 'hidden'})
     }
   }
 
   /**
-   * Set theme to a specific mode
+   * Select a theme mode (System, Light, or Dark) from the theme picker listbox.
+   *
+   * Opens the picker via its trigger, selects the exact matching option, and
+   * asserts the option becomes selected. For 'light'/'dark' this also waits
+   * for the resolved `html[data-theme]` attribute to match. For 'system' the
+   * resolved theme tracks OS preference, so only the selected option state is
+   * asserted — a resolved light/dark value does not confirm system mode.
    */
   async setTheme(theme: 'light' | 'dark' | 'system') {
-    const currentTheme = await this.getCurrentTheme()
+    const optionName = theme.charAt(0).toUpperCase() + theme.slice(1)
+    const listbox = await this.openThemePicker()
+    const option = listbox.getByRole('option', {name: optionName, exact: true})
 
-    if (currentTheme !== theme) {
-      // Click theme toggle until we get the desired theme
-      // This handles the three-state toggle (light -> dark -> system -> light)
-      let attempts = 0
-      while ((await this.getCurrentTheme()) !== theme && attempts < 3) {
-        await this.themeToggle.click()
-        await this.page.waitForTimeout(100) // Small delay for theme change
-        attempts++
-      }
+    await option.click()
+    await expect(option).toHaveAttribute('aria-selected', 'true')
+
+    if (theme === 'light' || theme === 'dark') {
+      await expect(this.page.locator('html')).toHaveAttribute('data-theme', theme)
     }
   }
 

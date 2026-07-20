@@ -1,6 +1,6 @@
 import React from 'react'
 import {Link} from 'react-router-dom'
-import ThemeToggle from './ThemeToggle'
+import {ThemePicker} from './ThemePicker'
 
 const Header: React.FC = () => {
   return (
@@ -36,7 +36,7 @@ const Header: React.FC = () => {
           </ul>
         </nav>
         <div className="header__actions">
-          <ThemeToggle />
+          <ThemePicker />
         </div>
       </div>
     </header>

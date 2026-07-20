@@ -1,10 +1,33 @@
-import type {Theme, ThemeMode} from '../types'
+import type {ActiveThemeChoice, Theme, ThemeMode, ThemeSelection} from '../types'
 import {useCallback, useMemo} from 'react'
+import {getPresetThemeById} from '../utils/preset-themes'
 import {useThemeContext} from './UseThemeContext'
+
+const themeColorsMatch = (left: Theme['colors'], right: Theme['colors']): boolean =>
+  left.primary === right.primary &&
+  left.secondary === right.secondary &&
+  left.accent === right.accent &&
+  left.background === right.background &&
+  left.surface === right.surface &&
+  left.text === right.text &&
+  left.textSecondary === right.textSecondary &&
+  left.border === right.border &&
+  left.error === right.error &&
+  left.warning === right.warning &&
+  left.success === right.success
+
+const matchesPreset = (theme: Theme): boolean => {
+  const preset = getPresetThemeById(theme.id)
+  return Boolean(
+    preset && theme.name === preset.name && theme.mode === preset.mode && themeColorsMatch(theme.colors, preset.colors),
+  )
+}
 
 export interface UseThemeReturn {
   // Current theme data
   currentTheme: Theme
+  activeThemeChoice: ActiveThemeChoice
+  activeCustomTheme: Theme | null
   themeMode: ThemeMode
   availableThemes: Theme[]
   systemPreference: 'light' | 'dark'
@@ -19,6 +42,7 @@ export interface UseThemeReturn {
   // Theme actions
   setThemeMode: (mode: ThemeMode) => void
   setCustomTheme: (theme: Theme) => void
+  setActiveTheme: (selection: ThemeSelection) => void
   toggleTheme: () => void
   switchToLight: () => void
   switchToDark: () => void
@@ -41,13 +65,27 @@ export interface UseThemeReturn {
  * @returns UseThemeReturn object with theme data and controls
  */
 export const useTheme = (): UseThemeReturn => {
-  const {currentTheme, themeMode, availableThemes, systemPreference, setThemeMode, setCustomTheme} = useThemeContext()
+  const {
+    currentTheme,
+    activeCustomTheme,
+    themeMode,
+    availableThemes,
+    systemPreference,
+    setThemeMode,
+    setCustomTheme,
+    setActiveTheme,
+  } = useThemeContext()
 
   // Track whether a custom theme is currently active (derived state)
-  const isCustomTheme = useMemo(
-    () => !availableThemes.some(theme => theme.id === currentTheme.id),
-    [currentTheme, availableThemes],
-  )
+  const activeThemeChoice = useMemo<ActiveThemeChoice>(() => {
+    if (!activeCustomTheme) return {type: 'mode', mode: themeMode}
+
+    return matchesPreset(activeCustomTheme)
+      ? {type: 'preset', theme: activeCustomTheme}
+      : {type: 'legacy-custom', theme: activeCustomTheme}
+  }, [activeCustomTheme, themeMode])
+
+  const isCustomTheme = activeCustomTheme !== null || !availableThemes.some(theme => theme.id === currentTheme.id)
 
   const isDarkMode = currentTheme.mode === 'dark'
   const isLightMode = currentTheme.mode === 'light'
@@ -98,6 +136,8 @@ export const useTheme = (): UseThemeReturn => {
   return {
     // Current theme data
     currentTheme,
+    activeThemeChoice,
+    activeCustomTheme,
     themeMode,
     availableThemes,
     systemPreference,
@@ -112,6 +152,7 @@ export const useTheme = (): UseThemeReturn => {
     // Theme actions
     setThemeMode,
     setCustomTheme,
+    setActiveTheme,
     toggleTheme,
     switchToLight,
     switchToDark,

@@ -153,6 +153,12 @@ export interface Theme extends ThemeMetadata {
   colors: ThemeColors
 }
 
+/** A listed theme choice that can be applied directly. */
+export type ThemeSelection = {type: 'mode'; mode: ThemeMode} | {type: 'preset'; theme: Theme}
+
+/** The resolved choice currently active in the theme system. */
+export type ActiveThemeChoice = ThemeSelection | {type: 'legacy-custom'; theme: Theme}
+
 /**
  * Extended theme definition with additional customization options
  */
@@ -228,10 +234,14 @@ export interface ThemeContextValue {
   availableThemes: Theme[]
   /** Detected system preference */
   systemPreference: SystemPreference
+  /** The active custom or preset theme source, if one is applied. */
+  activeCustomTheme: Theme | null
   /** Function to change theme mode */
   setThemeMode: (mode: ThemeMode) => void
   /** Function to apply a custom theme */
   setCustomTheme: (theme: Theme) => void
+  /** Function to apply a listed mode or preset choice. */
+  setActiveTheme: (selection: ThemeSelection) => void
 }
 
 /**
