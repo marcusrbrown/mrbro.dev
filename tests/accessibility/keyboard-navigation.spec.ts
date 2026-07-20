@@ -40,39 +40,37 @@ test.describe('Keyboard Navigation Tests', () => {
       // Verify it's focused
       await expect(themeToggle).toBeFocused()
 
-      // Get initial theme and button text
-      const initialTheme = await page.locator('html').getAttribute('data-theme')
-      const initialButtonText = await themeToggle.textContent()
-
       // Activate with Enter key
       await page.keyboard.press('Enter')
-      await page.waitForTimeout(400) // Wait for theme transition
-
-      // Check if either theme changed OR button text changed (mode change)
-      const newTheme = await page.locator('html').getAttribute('data-theme')
-      const newButtonText = await themeToggle.textContent()
-
-      const themeChanged = newTheme !== initialTheme
-      const modeChanged = newButtonText !== initialButtonText
-
-      // Either the resolved theme should change OR the mode should change
-      expect(themeChanged || modeChanged).toBe(true)
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeHidden()
 
       // Test with Space key as well
       await themeToggle.focus()
-      const beforeSpaceTheme = await page.locator('html').getAttribute('data-theme')
-      const beforeSpaceText = await themeToggle.textContent()
-
       await page.keyboard.press('Space')
-      await page.waitForTimeout(400)
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeVisible()
+    })
 
-      const afterSpaceTheme = await page.locator('html').getAttribute('data-theme')
-      const afterSpaceText = await themeToggle.textContent()
+    test('should navigate and activate picker options without leaving the picker', async ({page}) => {
+      await page.addInitScript(() => localStorage.clear())
+      await page.goto('/')
+      const trigger = page.locator('.theme-toggle')
+      await trigger.focus()
+      await page.keyboard.press('Enter')
 
-      const spaceThemeChanged = afterSpaceTheme !== beforeSpaceTheme
-      const spaceModeChanged = afterSpaceText !== beforeSpaceText
-
-      expect(spaceThemeChanged || spaceModeChanged).toBe(true)
+      const listbox = page.getByRole('listbox', {name: 'Theme choices'})
+      const options = listbox.getByRole('option')
+      await expect(options).toHaveCount(15)
+      await expect(options.first()).toBeFocused()
+      await page.keyboard.press('ArrowDown')
+      await expect(options.nth(1)).toBeFocused()
+      await page.keyboard.press('End')
+      await expect(options.last()).toBeFocused()
+      await page.keyboard.press('Home')
+      await page.keyboard.press('Enter')
+      await expect(listbox).toBeVisible()
+      await expect(options.first()).toHaveAttribute('aria-selected', 'true')
     })
 
     test('should provide logical tab order across all pages', async ({page}) => {

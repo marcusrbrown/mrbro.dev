@@ -159,6 +159,79 @@ test.describe('Focus Management Tests', () => {
       }
     })
 
+    test('should restore focus after Escape and preserve the next target for other dismissal paths', async ({page}) => {
+      await page.goto('/')
+      await page.waitForLoadState('networkidle')
+      const trigger = page.locator('.theme-toggle')
+      const listbox = page.getByRole('listbox', {name: 'Theme choices'})
+
+      const expectedNextFocus = await trigger.evaluate(triggerElement => {
+        const tabbableSelector =
+          'a[href], button, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        const tabbables = Array.from(document.querySelectorAll<HTMLElement>(tabbableSelector)).filter(element => {
+          const style = window.getComputedStyle(element)
+          return style.display !== 'none' && style.visibility !== 'hidden'
+        })
+        if (!(triggerElement instanceof HTMLElement)) return null
+        const next = tabbables[tabbables.indexOf(triggerElement) + 1]
+        return next
+          ? {
+              ariaLabel: next.getAttribute('aria-label'),
+              className: next.className,
+              href: next.getAttribute('href'),
+              id: next.id,
+              tagName: next.tagName,
+              text: next.textContent?.trim(),
+            }
+          : null
+      })
+      expect(expectedNextFocus).not.toBeNull()
+
+      await trigger.click()
+      await expect(listbox).toBeVisible()
+      const option = listbox.getByRole('option').first()
+      await option.focus()
+      await page.keyboard.press('Tab')
+      await expect(listbox).toBeHidden()
+      await expect(page.locator(':focus')).toHaveJSProperty('tagName', expectedNextFocus?.tagName)
+      expect(
+        await page.locator(':focus').evaluate(element => ({
+          ariaLabel: element.getAttribute('aria-label'),
+          className: element.className,
+          href: element.getAttribute('href'),
+          id: element.id,
+          tagName: element.tagName,
+          text: element.textContent?.trim(),
+        })),
+      ).toEqual(expectedNextFocus)
+
+      await trigger.click()
+      await expect(listbox).toBeVisible()
+      await option.focus()
+      await page.keyboard.press('Shift+Tab')
+      await expect(listbox).toBeHidden()
+      await expect(trigger).toBeFocused()
+
+      await trigger.click()
+      await expect(listbox).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(listbox).toBeHidden()
+      await expect(trigger).toBeFocused()
+
+      await trigger.click()
+      await expect(listbox).toBeVisible()
+      const outsideButton = page.locator('#unit-4-outside-target')
+      await page.evaluate(() => {
+        const button = document.createElement('button')
+        button.id = 'unit-4-outside-target'
+        button.textContent = 'Outside target'
+        document.body.append(button)
+      })
+      await outsideButton.click()
+      await expect(listbox).toBeHidden()
+      await expect(outsideButton).toBeFocused()
+    })
+
     test('should handle focus during page transitions', async ({page}) => {
       await page.goto('/')
       await page.waitForLoadState('networkidle')

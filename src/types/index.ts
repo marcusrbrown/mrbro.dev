@@ -68,6 +68,7 @@ export interface GitHubRepository {
 
 // Re-export theme types from dedicated theme types file
 export type {
+  ActiveThemeChoice,
   ColorContrastResult,
   ColorValue,
   ExtendedTheme,
@@ -86,6 +87,7 @@ export type {
   ThemeMode,
   ThemePerformanceMetrics,
   ThemePreset,
+  ThemeSelection,
   ThemeSpacing,
   ThemeStorageConfig,
   ThemeTransitionOptions,

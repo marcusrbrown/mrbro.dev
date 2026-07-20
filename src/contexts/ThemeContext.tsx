@@ -1,4 +1,4 @@
-import type {Theme, ThemeContextValue, ThemeMode} from '../types'
+import type {Theme, ThemeContextValue, ThemeMode, ThemeSelection} from '../types'
 import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react'
 import {ThemeContext} from '../hooks/UseThemeContext'
 import {prefersReducedMotion} from '../utils/accessibility'
@@ -9,7 +9,14 @@ import {
   optimizeForThemeSwitch,
   setupReducedMotionListener,
 } from '../utils/theme-performance'
-import {loadCustomTheme, loadThemeMode, saveCustomTheme, saveThemeMode} from '../utils/theme-storage'
+import {
+  isThemeStorageKey,
+  loadCustomTheme,
+  loadThemeMode,
+  removeCustomTheme,
+  saveCustomTheme,
+  saveThemeMode,
+} from '../utils/theme-storage'
 
 const defaultLightTheme: Theme = {
   id: 'default-light',
@@ -127,9 +134,7 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
     // Skip animations entirely if user prefers reduced motion
     if (prefersReducedMotion()) {
       setCustomThemeValue(theme)
-      if (theme) {
-        saveCustomTheme(theme)
-      }
+      if (theme) saveCustomTheme(theme)
       return
     }
 
@@ -138,15 +143,27 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
     optimizeForThemeSwitch(performanceLevel)
 
     setCustomThemeValue(theme)
-    if (theme) {
-      saveCustomTheme(theme)
-    }
+    if (theme) saveCustomTheme(theme)
 
     // Clean up performance optimizations after transition
     setTimeout(() => {
       cleanupThemeOptimizations()
     }, 350) // Slightly longer than max transition duration
   }, [])
+
+  const setActiveTheme = useCallback(
+    (selection: ThemeSelection) => {
+      if (selection.type === 'mode') {
+        setThemeMode(selection.mode)
+        setCustomTheme(null)
+        removeCustomTheme()
+        return
+      }
+
+      setCustomTheme(selection.theme)
+    },
+    [setCustomTheme, setThemeMode],
+  )
 
   // Detect system preference and listen for changes
   useEffect(() => {
@@ -174,18 +191,13 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
 
     const handleStorageChange = (e: StorageEvent) => {
       // Only handle theme-related storage changes
-      if (!e.key || !e.key.includes('mrbro-dev-theme')) return
+      if (!isThemeStorageKey(e.key)) return
 
       try {
-        if (e.key === 'mrbro-dev-theme-mode') {
-          // Theme mode changed in another tab
-          const newThemeMode = loadThemeMode()
-          setThemeModeValue(newThemeMode)
-        } else if (e.key === 'mrbro-dev-custom-theme') {
-          // Custom theme changed in another tab
-          const newCustomTheme = loadCustomTheme()
-          setCustomThemeValue(newCustomTheme)
-        }
+        const newThemeMode = loadThemeMode()
+        const newCustomTheme = loadCustomTheme()
+        setThemeModeValue(newThemeMode)
+        setCustomThemeValue(newCustomTheme)
       } catch (error) {
         console.warn('Error handling cross-tab theme sync:', error)
       }
@@ -281,10 +293,21 @@ export const ThemeProvider = ({children}: ThemeProviderProps) => {
       themeMode: themeModeValue,
       availableThemes,
       systemPreference,
+      activeCustomTheme: customThemeValue,
       setThemeMode,
       setCustomTheme,
+      setActiveTheme,
     }),
-    [currentTheme, themeModeValue, availableThemes, systemPreference, setThemeMode, setCustomTheme],
+    [
+      currentTheme,
+      themeModeValue,
+      availableThemes,
+      systemPreference,
+      customThemeValue,
+      setThemeMode,
+      setCustomTheme,
+      setActiveTheme,
+    ],
   )
 
   return <ThemeContext value={contextValue}>{children}</ThemeContext>

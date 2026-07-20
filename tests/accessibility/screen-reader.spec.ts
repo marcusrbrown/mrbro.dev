@@ -376,6 +376,87 @@ test.describe('Screen Reader Compatibility Tests', () => {
   })
 
   test.describe('Comprehensive ARIA Compliance', () => {
+    test('should announce the active recognized preset in the trigger name', async ({page}) => {
+      await page.addInitScript(() => localStorage.clear())
+      await page.goto('/')
+      const trigger = page.locator('.theme-toggle')
+      await trigger.click()
+      const dracula = page
+        .getByRole('listbox', {name: 'Theme choices'})
+        .getByRole('option', {name: 'Dracula', exact: true})
+      await dracula.click()
+
+      await expect(trigger).toHaveAttribute('aria-label', 'Current theme: Dracula. Open theme picker.')
+    })
+
+    test('should announce and preserve an unrecognized legacy custom theme', async ({page}) => {
+      const legacyTheme = {
+        id: 'legacy-accessibility-theme',
+        name: 'Legacy Accessibility Theme',
+        mode: 'dark',
+        colors: {
+          primary: '#ff0000',
+          secondary: '#00ff00',
+          accent: '#0000ff',
+          background: '#000000',
+          surface: '#111111',
+          text: '#ffffff',
+          textSecondary: '#cccccc',
+          border: '#333333',
+          error: '#ff4444',
+          warning: '#ffaa00',
+          success: '#44ff44',
+        },
+      }
+      await page.goto('/')
+      await page.evaluate(theme => {
+        localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify('light'))
+        localStorage.setItem('mrbro-dev-custom-theme', JSON.stringify(theme))
+      }, legacyTheme)
+      await page.reload()
+
+      const trigger = page.locator('.theme-toggle')
+      await expect(trigger).toHaveAttribute('aria-label', 'Current theme: Custom. Open theme picker.')
+      await trigger.click()
+      await expect(page.getByText('Current: Custom theme')).toBeVisible()
+    })
+
+    test('should expose the theme picker choice names and selected state', async ({page}) => {
+      await page.addInitScript(() => localStorage.clear())
+      await page.goto('/')
+      const trigger = page.locator('.theme-toggle')
+      await expect(trigger).toHaveAttribute('aria-haspopup', 'listbox')
+      await expect(trigger).toHaveAttribute('aria-label', /Current theme:/)
+
+      await trigger.click()
+      const listbox = page.getByRole('listbox', {name: 'Theme choices'})
+      const options = listbox.getByRole('option')
+      await expect(options).toHaveCount(15)
+      await expect(options.first()).toHaveAccessibleName('System')
+      await expect(options.nth(1)).toHaveAccessibleName('Light')
+      await expect(options.nth(2)).toHaveAccessibleName('Dark')
+      await expect(options.filter({hasText: 'Dracula'})).toHaveAccessibleName('Dracula')
+      await expect(options.filter({hasText: 'System'})).toHaveAttribute('aria-selected', 'true')
+      expect(
+        await options.evaluateAll(
+          elements => elements.filter(element => element.getAttribute('aria-selected') === 'true').length,
+        ),
+      ).toBe(1)
+    })
+
+    test('should have no serious or critical violations with the theme picker open', async ({page}) => {
+      await page.goto('/')
+      await page.locator('.theme-toggle').click()
+      const accessibilityScanResults = await new AxeBuilder({page})
+        .withTags(['wcag2a', 'wcag21a', 'wcag2aa', 'wcag21aa'])
+        .analyze()
+
+      const seriousOrCritical = accessibilityScanResults.violations.filter(
+        violation => violation.impact === 'serious' || violation.impact === 'critical',
+      )
+      expect(seriousOrCritical).toEqual([])
+    })
+
     test('should pass comprehensive ARIA validation', async ({page}) => {
       const pages = ['/', '/about', '/projects', '/blog']
 

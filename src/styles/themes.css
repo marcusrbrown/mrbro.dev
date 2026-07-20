@@ -401,8 +401,14 @@ article,
   contain-intrinsic-size: 100% 400px;
 }
 
-/* Header and footer - isolate from main content changes */
-.header,
+/* Header - allow overflowing overlays and fixed elements */
+.header {
+  /* Use layout containment only; paint containment would clip overflowing dropdowns/pickers */
+  contain: layout;
+  will-change: background-color, color;
+}
+
+/* Footer and nav - isolate from main content changes */
 .footer,
 nav {
   /* Paint containment prevents repaints of main content */

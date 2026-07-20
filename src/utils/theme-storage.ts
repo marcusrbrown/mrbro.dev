@@ -8,6 +8,10 @@ const STORAGE_KEYS = {
   SAVED_THEMES: 'mrbro-dev-saved-themes',
 } as const
 
+/** Returns whether a storage event belongs to the active theme state. */
+export const isThemeStorageKey = (key: string | null): boolean =>
+  key === STORAGE_KEYS.THEME_MODE || key === STORAGE_KEYS.CUSTOM_THEME
+
 // Fallback values when storage fails or data is invalid
 const FALLBACK_THEME_MODE: ThemeMode = 'system'
 

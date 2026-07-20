@@ -6,7 +6,7 @@
 
 | Domain          | Components                                                                               |
 | --------------- | ---------------------------------------------------------------------------------------- |
-| **Theme**       | `ThemeToggle`, `ThemeCustomizer`, `ThemePreview`, `PresetThemeGallery`                   |
+| **Theme**       | `ThemePicker`, `ThemeCustomizer`, `ThemePreview`, `PresetThemeGallery`                   |
 | **Content**     | `BlogPost`, `ProjectCard`, `AboutSection`                                                |
 | **Layout**      | `Header`, `Footer`, `HeroSection`, `BackgroundPattern`, `LoadingStates`                  |
 | **Interactive** | `ProjectGallery`, `ProjectFilter`, `ProjectPreviewModal`, `SmoothScrollNav`, `CodeBlock` |
@@ -21,7 +21,7 @@
 ## Accessibility (WCAG 2.1 AA)
 
 - All interactive elements keyboard-focusable with visible focus rings
-- ARIA labels required for modals (`ProjectPreviewModal`) and toggles (`ThemeToggle`)
+- ARIA labels required for modals (`ProjectPreviewModal`) and toggles (`ThemePicker`)
 - Animations must respect `prefers-reduced-motion`
 - Maintain logical heading hierarchy within sections
 

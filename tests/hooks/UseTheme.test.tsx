@@ -3,6 +3,7 @@ import {act, renderHook} from '@testing-library/react'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {ThemeProvider} from '../../src/contexts/ThemeContext'
 import {useTheme} from '../../src/hooks/UseTheme'
+import {presetThemes} from '../../src/utils/preset-themes'
 
 // Mock matchMedia for testing system preference detection
 const mockMatchMedia = vi.fn()
@@ -43,6 +44,22 @@ afterEach(() => {
 })
 
 const wrapper = ({children}: {children: ReactNode}) => <ThemeProvider>{children}</ThemeProvider>
+
+const getFirstPreset = () => {
+  const preset = presetThemes[0]
+  if (!preset) {
+    throw new Error('Expected preset catalog to contain at least one theme')
+  }
+  return preset
+}
+
+const getPreset = (id: string) => {
+  const preset = presetThemes.find(theme => theme.id === id)
+  if (!preset) {
+    throw new Error(`Expected preset catalog to contain ${id}`)
+  }
+  return preset
+}
 
 describe('useTheme', () => {
   describe('initialization', () => {
@@ -298,6 +315,229 @@ describe('useTheme', () => {
       expect(result.current.isCustomTheme).toBe(true)
       expect(result.current.currentTheme.id).toBe('custom-theme')
     })
+
+    it('clears an active preset when selecting a mode and removes its storage', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+
+      act(() => {
+        result.current.setCustomTheme(getFirstPreset())
+      })
+      const setItemCallCount = localStorageMock.setItem.mock.calls.length
+
+      act(() => {
+        result.current.setActiveTheme({type: 'mode', mode: 'dark'})
+      })
+
+      expect(result.current.currentTheme.id).toBe('default-dark')
+      expect(result.current.activeThemeChoice).toEqual({type: 'mode', mode: 'dark'})
+      expect(localStorage.getItem('mrbro-dev-custom-theme')).toBeNull()
+      expect(localStorageMock.setItem.mock.calls.length).toBe(setItemCallCount + 1)
+      const lastSetCall = localStorageMock.setItem.mock.invocationCallOrder.at(-1)
+      const lastRemoveCall = localStorageMock.removeItem.mock.invocationCallOrder.at(-1)
+      expect(lastSetCall).toBeDefined()
+      expect(lastRemoveCall).toBeDefined()
+      expect(lastSetCall ?? Infinity).toBeLessThan(lastRemoveCall ?? -Infinity)
+    })
+
+    it('updates a custom theme from a custom-theme storage event', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const customTheme = {
+        id: 'storage-custom-theme',
+        name: 'Storage Custom Theme',
+        mode: 'dark' as const,
+        colors: {
+          primary: '#ff0000',
+          secondary: '#00ff00',
+          accent: '#0000ff',
+          background: '#000000',
+          surface: '#111111',
+          text: '#ffffff',
+          textSecondary: '#cccccc',
+          border: '#333333',
+          error: '#ff4444',
+          warning: '#ffaa00',
+          success: '#44ff44',
+        },
+      }
+
+      act(() => {
+        localStorage.setItem('mrbro-dev-custom-theme', JSON.stringify(customTheme))
+        window.dispatchEvent(new StorageEvent('storage', {key: 'mrbro-dev-custom-theme'}))
+      })
+
+      expect(result.current.currentTheme).toEqual(customTheme)
+      expect(result.current.activeThemeChoice).toEqual({type: 'legacy-custom', theme: customTheme})
+    })
+
+    it('preserves a preset when generic setThemeMode changes mode', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const preset = getFirstPreset()
+
+      act(() => {
+        result.current.setCustomTheme(preset)
+        result.current.setThemeMode('dark')
+      })
+
+      expect(result.current.currentTheme).toBe(preset)
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: preset})
+    })
+
+    it('clears a preset in setActiveTheme mode selection after saving mode', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const preset = getFirstPreset()
+
+      act(() => {
+        result.current.setCustomTheme(preset)
+      })
+      const setItemCallCount = localStorageMock.setItem.mock.calls.length
+
+      act(() => {
+        result.current.setActiveTheme({type: 'mode', mode: 'dark'})
+      })
+
+      expect(result.current.currentTheme.id).toBe('default-dark')
+      expect(localStorage.getItem('mrbro-dev-custom-theme')).toBeNull()
+      expect(localStorageMock.setItem.mock.calls.length).toBe(setItemCallCount + 1)
+      const lastSetCall = localStorageMock.setItem.mock.invocationCallOrder.at(-1)
+      const lastRemoveCall = localStorageMock.removeItem.mock.invocationCallOrder.at(-1)
+      expect(lastSetCall).toBeDefined()
+      expect(lastRemoveCall).toBeDefined()
+      expect(lastSetCall ?? Infinity).toBeLessThan(lastRemoveCall ?? -Infinity)
+    })
+
+    it('applies and persists a preset through setActiveTheme', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const preset = getFirstPreset()
+
+      act(() => {
+        result.current.setActiveTheme({type: 'preset', theme: preset})
+      })
+
+      expect(result.current.currentTheme).toBe(preset)
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: preset})
+      expect(JSON.parse(localStorage.getItem('mrbro-dev-custom-theme') ?? '{}')).toEqual(preset)
+    })
+
+    it('retains custom semantics for recognized presets', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const preset = getFirstPreset()
+
+      act(() => {
+        result.current.setCustomTheme(preset)
+      })
+
+      expect(result.current.isCustomTheme).toBe(true)
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: preset})
+    })
+
+    it('treats a custom theme colliding with a built-in ID as legacy custom', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const collidingTheme = {...getFirstPreset(), id: 'default-light', name: 'Colliding Custom'}
+
+      act(() => {
+        result.current.setCustomTheme(collidingTheme)
+      })
+
+      expect(result.current.activeThemeChoice).toEqual({type: 'legacy-custom', theme: collidingTheme})
+      expect(result.current.isCustomTheme).toBe(true)
+
+      act(() => {
+        result.current.setActiveTheme({type: 'mode', mode: 'light'})
+      })
+
+      expect(result.current.currentTheme.id).toBe('default-light')
+      expect(result.current.activeCustomTheme).toBeNull()
+    })
+
+    it('requires matching preset data before classifying a same-ID custom as a preset', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const canonicalPreset = getPreset('dracula')
+      const alteredCustom = {
+        ...canonicalPreset,
+        name: 'Altered Dracula',
+        colors: {...canonicalPreset.colors, primary: '#123456'},
+      }
+
+      act(() => {
+        result.current.setCustomTheme(alteredCustom)
+      })
+
+      expect(result.current.activeThemeChoice).toEqual({type: 'legacy-custom', theme: alteredCustom})
+
+      act(() => {
+        result.current.setActiveTheme({type: 'preset', theme: canonicalPreset})
+      })
+
+      expect(result.current.currentTheme).toBe(canonicalPreset)
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: canonicalPreset})
+    })
+
+    it('carries the resolved active custom theme object for a preset choice', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const preset = getFirstPreset()
+
+      act(() => {
+        result.current.setActiveTheme({type: 'preset', theme: preset})
+      })
+
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: result.current.activeCustomTheme})
+    })
+
+    it('restores a persisted preset over a dormant mode after reload', () => {
+      const preset = getFirstPreset()
+      localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify('dark'))
+      localStorage.setItem('mrbro-dev-custom-theme', JSON.stringify(preset))
+
+      const {result, unmount} = renderHook(() => useTheme(), {wrapper})
+
+      expect(result.current.currentTheme.id).toBe(preset.id)
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: preset})
+
+      unmount()
+      const reloaded = renderHook(() => useTheme(), {wrapper})
+      expect(reloaded.result.current.currentTheme.id).toBe(preset.id)
+      expect(reloaded.result.current.activeThemeChoice).toEqual({type: 'preset', theme: preset})
+    })
+
+    it('derives recognized presets separately from legacy custom themes', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+
+      act(() => {
+        result.current.setCustomTheme(getFirstPreset())
+      })
+
+      expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: getFirstPreset()})
+      expect(result.current.isCustomTheme).toBe(true)
+    })
+
+    it('preserves an unrecognized custom theme as legacy custom state', () => {
+      const {result} = renderHook(() => useTheme(), {wrapper})
+      const legacyTheme = {
+        id: 'legacy-theme',
+        name: 'Legacy Theme',
+        mode: 'dark' as const,
+        colors: {
+          primary: '#ff0000',
+          secondary: '#00ff00',
+          accent: '#0000ff',
+          background: '#000000',
+          surface: '#111111',
+          text: '#ffffff',
+          textSecondary: '#cccccc',
+          border: '#333333',
+          error: '#ff4444',
+          warning: '#ffaa00',
+          success: '#44ff44',
+        },
+      }
+
+      act(() => {
+        result.current.setCustomTheme(legacyTheme)
+      })
+
+      expect(result.current.activeThemeChoice).toEqual({type: 'legacy-custom', theme: legacyTheme})
+      expect(result.current.isCustomTheme).toBe(true)
+    })
   })
 
   describe('available themes', () => {
@@ -407,6 +647,27 @@ describe('ThemeContext — reduced-motion and cross-tab sync', () => {
 
     expect(result.current.themeMode).toBe(initialMode)
     expect(result.current.isCustomTheme).toBe(false)
+  })
+
+  it('should converge on the persisted custom-over-mode pair regardless of event key', () => {
+    const preset = getFirstPreset()
+    localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify('dark'))
+    localStorage.setItem('mrbro-dev-custom-theme', JSON.stringify(preset))
+    const {result} = renderHook(() => useTheme(), {wrapper})
+
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', {key: 'mrbro-dev-theme-mode'}))
+    })
+
+    expect(result.current.activeThemeChoice).toEqual({type: 'preset', theme: preset})
+
+    act(() => {
+      localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify('light'))
+      localStorage.setItem('mrbro-dev-custom-theme', '')
+      window.dispatchEvent(new StorageEvent('storage', {key: 'mrbro-dev-custom-theme'}))
+    })
+
+    expect(result.current.activeThemeChoice).toEqual({type: 'mode', mode: 'light'})
   })
 
   it('should ignore storage events for unrelated keys', () => {

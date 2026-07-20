@@ -244,23 +244,47 @@ test.describe('Responsive Design Tests', () => {
 
         await homePage.goto()
 
-        // Theme toggle should work at all sizes
+        // Theme picker should work at all sizes
         const themeToggle = page.locator('.theme-toggle')
-        const initialTheme = await homePage.getCurrentTheme()
-        const initialButtonText = await themeToggle.textContent()
-
         await themeToggle.click()
-        await page.waitForTimeout(400) // Wait for theme transition
-
-        const newTheme = await homePage.getCurrentTheme()
-        const newButtonText = await themeToggle.textContent()
-
-        // Either theme should change OR button text should change (mode change)
-        const themeChanged = newTheme !== initialTheme
-        const modeChanged = newButtonText !== initialButtonText
-
-        expect(themeChanged || modeChanged).toBe(true)
+        await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeVisible()
+        await themeToggle.click()
+        await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeHidden()
       }
+    })
+
+    test('keeps the mobile picker within the viewport and scrollable to the final option', async ({page}) => {
+      await page.addInitScript(() => localStorage.clear())
+      await page.setViewportSize({width: 375, height: 420})
+      await page.goto('/')
+
+      const trigger = page.locator('.theme-toggle')
+      await expect(trigger).toBeVisible()
+      await trigger.click()
+      const panel = page.locator('.theme-picker__panel')
+      const listbox = page.getByRole('listbox', {name: 'Theme choices'})
+      await expect(panel).toBeVisible()
+
+      const panelBox = await panel.boundingBox()
+      expect(panelBox).not.toBeNull()
+      if (panelBox) {
+        expect(panelBox.x).toBeGreaterThanOrEqual(0)
+        expect(panelBox.x + panelBox.width).toBeLessThanOrEqual(375)
+        expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(420)
+      }
+
+      const finalOption = listbox.getByRole('option').last()
+      await finalOption.scrollIntoViewIfNeeded()
+      await expect(finalOption).toBeVisible()
+      await finalOption.click()
+      await expect(finalOption).toHaveAttribute('aria-selected', 'true')
+      const dimensions = await page.evaluate(() => ({
+        bodyScrollWidth: document.body.scrollWidth,
+        viewportWidth: window.innerWidth,
+        initialScrollY: window.scrollY,
+      }))
+      expect(dimensions.bodyScrollWidth).toBeLessThanOrEqual(dimensions.viewportWidth)
+      expect(dimensions.initialScrollY).toBe(0)
     })
 
     test('should apply responsive theme styles correctly', async ({page}) => {

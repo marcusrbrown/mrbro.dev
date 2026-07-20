@@ -24,29 +24,11 @@ test.describe('Theme Switching Tests', () => {
       const homePage = new HomePage(page)
       await homePage.goto()
 
-      const initialTheme = await homePage.getCurrentTheme()
-
-      // Get initial button text to understand the current mode
       const themeToggle = page.locator('.theme-toggle')
-      const initialButtonText = await themeToggle.textContent()
-
-      // Click theme toggle - this cycles through light → dark → system
-      await homePage.toggleTheme()
-
-      // Check if button text changed (mode definitely changes even if resolved theme doesn't)
-      const newButtonText = await themeToggle.textContent()
-      expect(newButtonText).not.toBe(initialButtonText)
-
-      // Also check if the actual theme changed (might not if system matches current)
-      const newTheme = await homePage.getCurrentTheme()
-
-      // If we started in system mode and system preference is light,
-      // clicking once goes to light mode - same resolved theme but different mode
-      // So we either expect theme to change OR button text to change (mode change)
-      const themeChanged = newTheme !== initialTheme
-      const modeChanged = newButtonText !== initialButtonText
-
-      expect(themeChanged || modeChanged).toBe(true)
+      await themeToggle.click()
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeVisible()
+      await themeToggle.click()
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeHidden()
     })
   })
 
@@ -81,24 +63,57 @@ test.describe('Theme Switching Tests', () => {
       const themeOnAbout = await homePage.getCurrentTheme()
       expect(themeOnAbout).toBe(themeOnHome)
     })
+
+    test('restores a selected preset after reload', async ({page}) => {
+      await page.goto('/')
+
+      await page.locator('.theme-toggle').click()
+      const picker = page.getByRole('listbox', {name: 'Theme choices'})
+      await picker.getByRole('option', {name: 'Dracula', exact: true}).click()
+      await expect(page.locator('.theme-picker__trigger-text')).toHaveText('Dracula')
+
+      await page.reload()
+      await page.locator('.theme-toggle').click()
+      await expect(page.getByRole('option', {name: 'Dracula', exact: true})).toHaveAttribute('aria-selected', 'true')
+    })
+
+    test('clears a preset override when a mode is selected before reload', async ({page}) => {
+      await page.goto('/')
+
+      await page.locator('.theme-toggle').click()
+      let picker = page.getByRole('listbox', {name: 'Theme choices'})
+      await picker.getByRole('option', {name: 'Dracula', exact: true}).click()
+      await picker.getByRole('option', {name: 'Light', exact: true}).click()
+
+      await page.reload()
+      await page.locator('.theme-toggle').click()
+      picker = page.getByRole('listbox', {name: 'Theme choices'})
+      await expect(picker.getByRole('option', {name: 'Light', exact: true})).toHaveAttribute('aria-selected', 'true')
+      await expect(picker.getByRole('option', {name: 'Dracula', exact: true})).toHaveAttribute('aria-selected', 'false')
+      await expect(page.locator('.theme-picker__legacy-status')).toHaveCount(0)
+      expect(await page.evaluate(() => localStorage.getItem('mrbro-dev-custom-theme'))).toBeNull()
+    })
   })
 
   test.describe('Theme Visual Changes', () => {
     test('should apply different styles for light and dark themes', async ({page}) => {
-      const homePage = new HomePage(page)
-      await homePage.goto()
+      await page.goto('/')
 
       // Test light theme
-      await homePage.setTheme('light')
-      await homePage.waitForThemeTransition()
+      await page.locator('.theme-toggle').click()
+      await page.getByRole('listbox', {name: 'Theme choices'}).getByRole('option', {name: 'Light', exact: true}).click()
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 
       const lightBgColor = await page.evaluate(() => {
         return window.getComputedStyle(document.body).backgroundColor
       })
 
       // Test dark theme
-      await homePage.setTheme('dark')
-      await homePage.waitForThemeTransition()
+      await page.getByRole('listbox', {name: 'Theme choices'}).getByRole('option', {name: 'Dark', exact: true}).click()
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+      await expect
+        .poll(() => page.evaluate(() => window.getComputedStyle(document.body).backgroundColor))
+        .not.toBe(lightBgColor)
 
       const darkBgColor = await page.evaluate(() => {
         return window.getComputedStyle(document.body).backgroundColor
@@ -180,6 +195,84 @@ test.describe('Theme Switching Tests', () => {
       const theme = await homePage.getCurrentTheme()
       expect(['dark', 'system']).toContain(theme)
     })
+
+    test('tracks OS changes in System mode but keeps a preset fixed', async ({page, browserName}) => {
+      test.skip(browserName === 'webkit', 'System theme testing is not reliable on WebKit')
+      await page.addInitScript(() => localStorage.clear())
+      await page.emulateMedia({colorScheme: 'light'})
+      await page.goto('/')
+
+      await page.locator('.theme-toggle').click()
+      const picker = page.getByRole('listbox', {name: 'Theme choices'})
+      await picker.getByRole('option', {name: 'System', exact: true}).click()
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+
+      await page.emulateMedia({colorScheme: 'dark'})
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+      await page
+        .getByRole('listbox', {name: 'Theme choices'})
+        .getByRole('option', {name: 'Dracula', exact: true})
+        .click()
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+      await page.emulateMedia({colorScheme: 'light'})
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+    })
+
+    test('preserves and replaces an unrecognized legacy custom theme', async ({page}) => {
+      const legacyTheme = {
+        id: 'legacy-browser-theme',
+        name: 'Legacy Browser Theme',
+        mode: 'dark',
+        colors: {
+          primary: '#ff0000',
+          secondary: '#00ff00',
+          accent: '#0000ff',
+          background: '#000000',
+          surface: '#111111',
+          text: '#ffffff',
+          textSecondary: '#cccccc',
+          border: '#333333',
+          error: '#ff4444',
+          warning: '#ffaa00',
+          success: '#44ff44',
+        },
+      }
+      await page.goto('/')
+      await page.evaluate(theme => {
+        localStorage.setItem('mrbro-dev-theme-mode', JSON.stringify('light'))
+        localStorage.setItem('mrbro-dev-custom-theme', JSON.stringify(theme))
+      }, legacyTheme)
+      await page.reload()
+
+      await expect(page.locator('.theme-picker__trigger-text')).toHaveText('Custom')
+      await page.locator('.theme-toggle').click()
+      const picker = page.getByRole('listbox', {name: 'Theme choices'})
+      await expect(page.getByText('Current: Custom theme')).toBeVisible()
+      await picker.getByRole('option', {name: 'Light', exact: true}).click()
+      await expect(page.locator('.theme-picker__trigger-text')).toHaveText('Light')
+      await page.reload()
+      await expect(page.locator('.theme-picker__trigger-text')).toHaveText('Light')
+      expect(await page.evaluate(() => localStorage.getItem('mrbro-dev-custom-theme'))).toBeNull()
+    })
+
+    test('keeps the picker open and synchronized during rapid comparison', async ({page}) => {
+      await page.addInitScript(() => localStorage.clear())
+      await page.goto('/')
+      await page.locator('.theme-toggle').click()
+      const picker = page.getByRole('listbox', {name: 'Theme choices'})
+
+      for (const name of ['Dracula', 'Solarized Light', 'Dark']) {
+        const option = picker.getByRole('option', {name, exact: true})
+        await option.click()
+        await expect(picker).toBeVisible()
+        await expect(option).toHaveAttribute('aria-selected', 'true')
+        await expect(option).toBeFocused()
+      }
+
+      await expect(page.locator('.theme-picker__trigger-text')).toHaveText('Dark')
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+    })
   })
 
   test.describe('Theme Accessibility', () => {
@@ -245,21 +338,10 @@ test.describe('Theme Switching Tests', () => {
 
       expect(isFocused).toBe(true)
 
-      // Should be activatable with Enter key
-      const initialTheme = await homePage.getCurrentTheme()
-      const initialButtonText = await themeToggle.textContent()
-
       await page.keyboard.press('Enter')
-      await page.waitForTimeout(400) // Wait for theme transition
-
-      const newTheme = await homePage.getCurrentTheme()
-      const newButtonText = await themeToggle.textContent()
-
-      // Either theme should change OR button text should change (mode change)
-      const themeChanged = newTheme !== initialTheme
-      const modeChanged = newButtonText !== initialButtonText
-
-      expect(themeChanged || modeChanged).toBe(true)
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('listbox', {name: 'Theme choices'})).toBeHidden()
     })
   })
 })
