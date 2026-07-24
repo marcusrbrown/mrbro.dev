@@ -195,7 +195,9 @@ describe('createSpawnRunner', () => {
         `setInterval(() => {}, 1000);`, // stay alive until signaled
       ].join('\n'),
     )
-    const runner = createSpawnRunner({scriptPath, timeoutMs: 150, killGraceMs: 100})
+    // Leave enough time for a loaded CI worker to start Node and register the
+    // signal handler. The marker assertion below still proves timeout handling.
+    const runner = createSpawnRunner({scriptPath, timeoutMs: 1000, killGraceMs: 100})
     const result = await runner(payload, {worktree: worktree()})
 
     expect(result.exitCode).not.toBe(0)
